@@ -1,0 +1,25 @@
+#pragma once
+
+#include <comdef.h>
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <stb/stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/transform.hpp>
+#include <array>
+#include <cassert>
+#include <codecvt>
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <locale>
+#include <memory>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <vector>
