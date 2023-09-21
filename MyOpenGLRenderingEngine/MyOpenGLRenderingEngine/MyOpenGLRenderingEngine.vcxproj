@@ -149,8 +149,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\cores\BasicGeometryGenerator.cpp" />
     <ClCompile Include="..\..\cores\Camera.cpp" />
+    <ClCompile Include="..\..\cores\Framebuffer.cpp" />
     <ClCompile Include="..\..\cores\Mesh.cpp" />
     <ClCompile Include="..\..\cores\Model.cpp" />
+    <ClCompile Include="..\..\cores\Renderbuffer.cpp" />
     <ClCompile Include="..\..\cores\Shader.cpp" />
     <ClCompile Include="..\..\cores\Texture.cpp" />
     <ClCompile Include="..\..\cores\Utility.cpp" />
@@ -168,8 +170,10 @@
   <ItemGroup>
     <ClInclude Include="..\..\cores\BasicGeometryGenerator.h" />
     <ClInclude Include="..\..\cores\Camera.h" />
+    <ClInclude Include="..\..\cores\Framebuffer.h" />
     <ClInclude Include="..\..\cores\Mesh.h" />
     <ClInclude Include="..\..\cores\Model.h" />
+    <ClInclude Include="..\..\cores\Renderbuffer.h" />
     <ClInclude Include="..\..\cores\Shader.h" />
     <ClInclude Include="..\..\cores\Stdafx.h" />
     <ClInclude Include="..\..\cores\Texture.h" />
@@ -186,6 +190,8 @@
     <ClInclude Include="Renderer.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\resources\shaders\cubemap.frag" />
+    <None Include="..\..\resources\shaders\cubemap.vert" />
     <None Include="..\..\resources\shaders\opaque.frag" />
     <None Include="..\..\resources\shaders\opaque.vert" />
     <None Include="..\..\resources\shaders\pbr.frag" />

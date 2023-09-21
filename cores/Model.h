@@ -20,7 +20,6 @@ struct ModelComponent
 	std::vector<Texture> roughnessMaps;
 };
 
-
 class Model
 {
 public:
@@ -28,9 +27,10 @@ public:
 	Model(const std::string& path);
 	Model(const Model& model) = delete;
 	Model operator=(const Model& model) = delete;
-	~Model();
 
 	void LoadModel(const std::string& path);
+
+	void DeleteModel();
 
 	std::vector<ModelComponent> GetModelComponents();
 	std::vector<ModelComponent>& GetModelComponentsByReference();

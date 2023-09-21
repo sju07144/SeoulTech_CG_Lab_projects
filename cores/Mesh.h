@@ -8,10 +8,9 @@ public:
 	Mesh() = default;
 	Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
 		GLenum primitiveType = GL_TRIANGLES);
-	~Mesh();
 
 	void ConfigureMesh(GLenum usage = GL_STATIC_DRAW);
-	void DeleteMemory();
+	void DeleteMesh();
 
 	uint32_t GetVertexAttribArray();
 

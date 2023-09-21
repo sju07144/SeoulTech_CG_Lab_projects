@@ -1,6 +1,7 @@
 #pragma once
 #include "../../cores/BasicGeometryGenerator.h"
 #include "../../cores/Camera.h"
+#include "../../cores/Framebuffer.h"
 #include "../../cores/Mesh.h"
 #include "../../cores/Model.h"
 #include "../../cores/Shader.h"
@@ -18,7 +19,7 @@ enum class RenderLayer : int
 	LightCube,
 	PBR,
 	Instancing,
-	Sky,
+	Environment,
 	Count
 };
 
@@ -48,12 +49,15 @@ struct RenderItem
 	std::vector<Texture*> normalMaps;
 	std::vector<Texture*> metallicMaps;
 	std::vector<Texture*> roughnessMaps;
+
+	Texture* environmentMap = nullptr;
 };
 
 struct Menu
 {
 	bool isUsingTexture = false;
 	bool isUsingNormalMap = false;
+	bool enableEnvironment = false;
 };
 
 
@@ -97,7 +101,7 @@ private:
 	void UseProgram(uint32_t programID);
 
 	void BuildRenderItems();
-	void DrawRenderItems(RenderLayer renderLayer, uint32_t programID);
+	void DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool isEnvironmentMap = false);
 private:
 	// Window size variables.
 	uint32_t mWindowWidth;
@@ -130,8 +134,12 @@ private:
 	std::vector<RenderItem> mOpaqueRenderItems;
 	std::vector<RenderItem> mPBRRenderItems;
 	std::vector<RenderItem> mInstancingRenderItems;
-	std::vector<RenderItem> mSkyRenderItems;
+	std::vector<RenderItem> mEnvironmentRenderItems;
 	std::unordered_map<RenderLayer, std::vector<RenderItem>> mAllRenderItems;
+
+	std::string mShaderDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\";
+	std::string mTextureDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\";
+	std::string mModelDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\models\\";
 
 	// mouse variables
 	float mLastMousePosX = 0.0f;

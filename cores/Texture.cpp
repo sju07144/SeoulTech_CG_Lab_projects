@@ -21,7 +21,7 @@ uint32_t Texture::GetTexture()
 }
 
 void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType, 
-	GLenum minFilterType, GLenum maxFilterType, 
+	GLenum minFilterType, GLenum magFilterType, 
 	bool nullData, int width, int height, GLenum textureFormat)
 {
 	glGenTextures(1, &mTexture);
@@ -33,7 +33,7 @@ void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType,
 
 	// Set texture filtering parameters.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilterType);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, maxFilterType);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilterType);
 
 	if (nullData)
 	{
@@ -68,8 +68,38 @@ void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType,
 	}
 }
 
-
-void Texture::CreateTextureCube(GLenum textureFormat, GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
-	GLenum minFilterType, GLenum maxFilterType)
+void Texture::CreateTextureCube(const std::vector<std::string>& fileNames, 
+	GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
+	GLenum minFilterType, GLenum magFilterType, GLenum textureFormat)
 {
+	glGenTextures(1, &mTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);
+
+	int width, height, nrChannels;
+	for (uint32_t i = 0; i < fileNames.size(); i++)
+	{
+		unsigned char* data = stbi_load(fileNames[i].c_str(), &width, &height, &nrChannels, 0);
+		if (data)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, textureFormat, width, height, 0, textureFormat, GL_UNSIGNED_BYTE, data
+			);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Cubemap tex failed to load at path: " << fileNames[i] << std::endl;
+			stbi_image_free(data);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, minFilterType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, magFilterType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, wrapSType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, wrapTType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, wrapRType);
+}
+
+void Texture::DeleteTexture()
+{
+	glDeleteTextures(1, &mTexture);
 }

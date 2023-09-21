@@ -12,10 +12,12 @@ public:
 	uint32_t GetTexture();
 
 	void CreateTexture2D(GLenum wrapSType, GLenum wrapTType, 
-		GLenum minFilterType, GLenum maxFilterType, 
+		GLenum minFilterType, GLenum magFilterType, 
 		bool nullData = false, int width = 0, int height = 0, GLenum textureFormat = GL_RGB);
-	void CreateTextureCube(GLenum textureFormat, GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
-		GLenum minFilterType, GLenum maxFilterType);
+	void CreateTextureCube(const std::vector<std::string>& fileNames,GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
+		GLenum minFilterType, GLenum magFilterType, GLenum textureFormat = GL_RGB);
+
+	void DeleteTexture();
 private:
 	uint32_t mTexture = 0;
 	std::string mTextureFileName = "";

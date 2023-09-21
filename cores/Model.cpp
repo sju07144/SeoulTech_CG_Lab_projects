@@ -5,12 +5,6 @@ Model::Model(const std::string& path)
 	LoadModel(path);
 }
 
-Model::~Model()
-{
-	for (auto& modelComponent : mModelComponents)
-		modelComponent.mesh.DeleteMemory();
-}
-
 void Model::LoadModel(const std::string& path)
 {
 	ParseDirectoryName(path);
@@ -21,6 +15,24 @@ void Model::LoadModel(const std::string& path)
 		throw std::runtime_error("Cannot read the model!");
 
 	ProcessNode(scene->mRootNode, scene);
+}
+
+void Model::DeleteModel()
+{
+	for (auto& modelComponent : mModelComponents)
+	{
+		for (auto& roughnessMap : modelComponent.roughnessMaps)
+			roughnessMap.DeleteTexture();
+		for (auto& metallicMap : modelComponent.metallicMaps)
+			metallicMap.DeleteTexture();
+		for (auto& normalMap : modelComponent.normalMaps)
+			normalMap.DeleteTexture();
+		for (auto& specularMap : modelComponent.specularMaps)
+			specularMap.DeleteTexture();
+		for (auto& albedoMap : modelComponent.albedoMaps)
+			albedoMap.DeleteTexture();
+		modelComponent.mesh.DeleteMesh();
+	}
 }
 
 std::vector<ModelComponent> Model::GetModelComponents()

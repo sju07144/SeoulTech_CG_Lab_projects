@@ -15,13 +15,7 @@ public:
 
 	Mesh CreateTerrain(const unsigned char* heightValues,
 		int width, int height, int nChannels);
-	Mesh CreateTerrainPatches(int width, int height, UINT countOfPatches);
+	Mesh CreateTerrainPatches(int width, int height, uint32_t countOfPatches);
 
 	Mesh CreateQuad(float x, float y, float w, float h, float depth);
-private:
-	std::vector<Vertex> mVertices;
-	UINT mVertexCount;
-
-	std::vector<uint32_t> mIndices;
-	UINT mIndexCount;
 };

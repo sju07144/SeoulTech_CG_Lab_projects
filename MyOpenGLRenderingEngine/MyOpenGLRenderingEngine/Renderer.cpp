@@ -32,8 +32,11 @@ Renderer::Renderer()
 }
 Renderer::~Renderer()
 {
-	for (auto& mesh : mBasicMeshes)
-		mesh.second.DeleteMemory();
+	 for (auto& mesh : mBasicMeshes)
+	 	mesh.second.DeleteMesh();
+
+	 for (auto& texture : mBasicTextures)
+		 texture.second.DeleteTexture();
 
 	renderer = nullptr;
 
@@ -65,7 +68,7 @@ void Renderer::Initialize()
 
 	// Create meshes
 	BasicGeometryGenerator geoGenerator;
-	auto box = geoGenerator.CreateBox(1.0f, 1.0f, 1.0f);
+	auto box = geoGenerator.CreateBox(2.0f, 2.0f, 2.0f);
 	box.ConfigureMesh();
 	mBasicMeshes.insert({ "box", std::move(box) });
 
@@ -75,7 +78,7 @@ void Renderer::Initialize()
 
 	// Load models
 	// model은 LoadModel 호출만으로 configuremesh, buildtexture 동시에 호출
-	// mMiniModel.LoadModel("E:\\SeoulTech_CG_Lab_projects\\resources\\models\\backpack\\backpack.obj");
+	// mMiniModel.LoadModel(mModelDirectoryName + "backpack\\backpack.obj");
 
 	// Initialize scene constants
 	InitializeSceneConstant();
@@ -87,11 +90,12 @@ void Renderer::Initialize()
 	BuildMaterials();
 
 	// Create vertex and fragment shader
+
 	Shader opaqueVertexShader;
 	Shader opaqueFragmentShader;
 	std::vector<uint32_t> opaqueShaderIDs;
-	opaqueVertexShader.CompileShader("E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\opaque.vert", GL_VERTEX_SHADER);
-	opaqueFragmentShader.CompileShader("E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\opaque.frag", GL_FRAGMENT_SHADER);
+	opaqueVertexShader.CompileShader(mShaderDirectoryName + "opaque.vert", GL_VERTEX_SHADER);
+	opaqueFragmentShader.CompileShader(mShaderDirectoryName + "opaque.frag", GL_FRAGMENT_SHADER);
 	opaqueShaderIDs.push_back(opaqueVertexShader.GetShaderID());
 	opaqueShaderIDs.push_back(opaqueFragmentShader.GetShaderID());
 	LinkPrograms("opaque", opaqueShaderIDs);
@@ -99,11 +103,20 @@ void Renderer::Initialize()
 	Shader pbrVertexShader;
 	Shader pbrFragmentShader;
 	std::vector<uint32_t> pbrShaderIDs;
-	pbrVertexShader.CompileShader("E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\pbr.vert", GL_VERTEX_SHADER);
-	pbrFragmentShader.CompileShader("E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\pbr.frag", GL_FRAGMENT_SHADER);
+	pbrVertexShader.CompileShader(mShaderDirectoryName + "pbr.vert", GL_VERTEX_SHADER);
+	pbrFragmentShader.CompileShader(mShaderDirectoryName + "pbr.frag", GL_FRAGMENT_SHADER);
 	pbrShaderIDs.push_back(pbrVertexShader.GetShaderID());
 	pbrShaderIDs.push_back(pbrFragmentShader.GetShaderID());
 	LinkPrograms("pbr", pbrShaderIDs);
+
+	Shader cubeMapVertexShader;
+	Shader cubeMapFragmentShader;
+	std::vector<uint32_t> cubeMapShaderIDs;
+	cubeMapVertexShader.CompileShader(mShaderDirectoryName + "cubemap.vert", GL_VERTEX_SHADER);
+	cubeMapFragmentShader.CompileShader(mShaderDirectoryName + "cubemap.frag", GL_FRAGMENT_SHADER);
+	cubeMapShaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	cubeMapShaderIDs.push_back(cubeMapFragmentShader.GetShaderID());
+	LinkPrograms("cubeMap", cubeMapShaderIDs);
 
 	BuildRenderItems();
 }
@@ -245,12 +258,17 @@ void Renderer::DrawScene()
 	auto currentProgramID = mProgramIDs["pbr"];
 	DrawRenderItems(RenderLayer::PBR, currentProgramID);
 
+	currentProgramID = mProgramIDs["cubeMap"];
+	DrawRenderItems(RenderLayer::Environment, currentProgramID, mMenu.enableEnvironment);
+
+
 	if (mShowImGuiWindow)
 	{
 		ImGui::Begin("Setting");                         
 
 		ImGui::Checkbox("IsUsingTexture", &mMenu.isUsingTexture); 
 		ImGui::Checkbox("IsUsingNormalMap", &mMenu.isUsingNormalMap);
+		ImGui::Checkbox("EnableEnvironment", &mMenu.enableEnvironment);
      
 		ImGui::SliderFloat4("ambient", &mSceneConstant.ambientLight.x, 0.0f, 1.0f);
 
@@ -277,12 +295,12 @@ void Renderer::UpdateSceneConstants()
 
 void Renderer::BuildTextures()
 {
-	Texture woodTexture("E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\wood.jpg");
+	Texture woodTexture(mTextureDirectoryName + "wood.jpg");
 	std::string texName = "woodAlbedoMap";
 	woodTexture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 	mBasicTextures.insert({ texName, std::move(woodTexture) });
 
-	std::string directoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\rustediron1-alt2-bl\\";
+	std::string directoryName = mTextureDirectoryName + "rustediron1-alt2-bl\\";
 	std::array<std::string, 4> textureNames = { "_basecolor", "_metallic", "_normal", "_roughness" };
 	texName = "rustediron2";
 	for (int i = 0; i < 4; i++)
@@ -292,6 +310,15 @@ void Renderer::BuildTextures()
 		rustediron2Texture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
 		mBasicTextures.insert({ texName + textureNames[i], std::move(rustediron2Texture) });
 	}
+
+	Texture skybox;
+	directoryName = mTextureDirectoryName + "skybox\\";
+	std::vector<std::string> skyboxNames = { "right.jpg", "left.jpg", "bottom.jpg", "top.jpg", "front.jpg", "back.jpg" };
+	for (auto& skyboxName : skyboxNames)
+		skyboxName = directoryName + skyboxName;
+	texName = "skybox";
+	skybox.CreateTextureCube(skyboxNames, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR);
+	mBasicTextures.insert({ texName, std::move(skybox) });
 }
 void Renderer::BuildMaterials()
 {
@@ -402,10 +429,49 @@ void Renderer::BuildRenderItems()
 	}
 
 	mAllRenderItems.insert({ RenderLayer::PBR, mPBRRenderItems });
+
+	renderItem.mesh = &mBasicMeshes["box"];
+	world = glm::mat4(1.0f);
+	renderItem.world = world;
+	renderItem.environmentMap = &mBasicTextures["skybox"];
+	mEnvironmentRenderItems.push_back(std::move(renderItem));
+
+	mAllRenderItems.insert({ RenderLayer::Environment, mEnvironmentRenderItems });
 }
-void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID)
+void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool isEnvironmentMap)
 {
 	const auto& renderItems = mAllRenderItems[renderLayer];
+
+	if (isEnvironmentMap)
+	{
+		glDepthFunc(GL_LEQUAL);
+
+		UseProgram(programID);
+
+		glm::mat4 view = glm::mat4(glm::mat3(mSceneConstant.view));
+		SetMat4(programID, "sceneConstant.view", view);
+		SetMat4(programID, "sceneConstant.projection", mSceneConstant.projection);
+		SetVec3(programID, "sceneConstant.cameraPos", mSceneConstant.cameraPos);
+
+		for (auto renderItem : renderItems)
+		{
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, renderItem.environmentMap->GetTexture());
+			SetInt(programID, "environmentMap", 0);
+
+			auto primitiveType = renderItem.mesh->GetPrimitiveType();
+			auto indexCount = renderItem.mesh->GetIndexCount();
+			auto indexFormat = renderItem.mesh->GetIndexFormat();
+			auto vertexAttribArray = renderItem.mesh->GetVertexAttribArray();
+
+			glBindVertexArray(vertexAttribArray);
+			glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
+			glBindVertexArray(0);
+		}
+
+		glDepthFunc(GL_LESS);
+		return;
+	}
 
 	UseProgram(programID);
 
@@ -485,10 +551,6 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID)
 			SetInt(programID, "roughnessMap" + std::to_string(roughnessMapCount++), i);
 			i++;
 		}
-
-		// auto texture = mTextures[renderItem.textureName].GetTexture();
-		// glActiveTexture(GL_TEXTURE0);
-		// glBindTexture(GL_TEXTURE_2D, texture);
 
 		auto primitiveType = renderItem.mesh->GetPrimitiveType();
 		auto indexCount = renderItem.mesh->GetIndexCount();

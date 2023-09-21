@@ -3,6 +3,9 @@
 
 Mesh BasicGeometryGenerator::CreateBox(float width, float height, float depth)
 {
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 	//
 	// Create the vertices.
 	//
@@ -13,43 +16,43 @@ Mesh BasicGeometryGenerator::CreateBox(float width, float height, float depth)
 	float h2 = 0.5f * height;
 	float d2 = 0.5f * depth;
 
-	// Fill in the front face vertex data.
-	v[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
-	v[1] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-	v[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
-	v[3] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
-
 	// Fill in the back face vertex data.
-	v[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
-	v[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-	v[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-	v[7] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	v[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	v[1] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	v[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[3] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
 
-	// Fill in the top face vertex data.
-	v[8] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-	v[9] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-	v[10] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
-	v[11] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
-
-	// Fill in the bottom face vertex data.
-	v[12] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f);
-	v[13] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f);
-	v[14] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f);
-	v[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
+	// Fill in the front face vertex data.
+	v[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	v[5] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+	v[7] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
 
 	// Fill in the left face vertex data.
-	v[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[8] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[9] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[10] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[11] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Fill in the right face vertex data.
-	v[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v[12] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[13] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v[14] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[15] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 
-	mVertices.assign(&v[0], &v[24]);
+	// Fill in the bottom face vertex data.
+	v[16] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f);
+	v[17] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f);
+	v[18] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f);
+	v[19] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
+
+	// Fill in the top face vertex data.
+	v[20] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+	v[21] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+	v[22] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+	v[23] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
+
+	vertices.assign(&v[0], &v[24]);
 
 	//
 	// Create the indices.
@@ -57,37 +60,40 @@ Mesh BasicGeometryGenerator::CreateBox(float width, float height, float depth)
 
 	uint32_t i[36];
 
-	// Fill in the front face index data
+	// Fill in the back face index data
 	i[0] = 0; i[1] = 1; i[2] = 2;
 	i[3] = 0; i[4] = 2; i[5] = 3;
 
-	// Fill in the back face index data
+	// Fill in the front face index data
 	i[6] = 4; i[7] = 5; i[8] = 6;
 	i[9] = 4; i[10] = 6; i[11] = 7;
 
-	// Fill in the top face index data
+	// Fill in the left face index data
 	i[12] = 8; i[13] = 9; i[14] = 10;
 	i[15] = 8; i[16] = 10; i[17] = 11;
 
-	// Fill in the bottom face index data
+	// Fill in the right face index data
 	i[18] = 12; i[19] = 13; i[20] = 14;
 	i[21] = 12; i[22] = 14; i[23] = 15;
 
-	// Fill in the left face index data
+	// Fill in the bottom face index data
 	i[24] = 16; i[25] = 17; i[26] = 18;
 	i[27] = 16; i[28] = 18; i[29] = 19;
 
-	// Fill in the right face index data
+	// Fill in the top face index data
 	i[30] = 20; i[31] = 21; i[32] = 22;
 	i[33] = 20; i[34] = 22; i[35] = 23;
 
-	mIndices.assign(&i[0], &i[36]);
+	indices.assign(&i[0], &i[36]);
 
-	return Mesh(mVertices, mIndices);
+	return Mesh(vertices, indices);
 }
 
 Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, uint32_t n)
 {
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 	uint32_t vertexCount = m * n;
 	uint32_t faceCount = (m - 1) * (n - 1) * 2;
 
@@ -104,7 +110,7 @@ Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, ui
 	float du = 1.0f / (n - 1);
 	float dv = 1.0f / (m - 1);
 
-	mVertices.resize(vertexCount);
+	vertices.resize(vertexCount);
 	for (uint32_t i = 0; i < m; ++i)
 	{
 		float z = halfDepth - i * dz;
@@ -112,13 +118,13 @@ Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, ui
 		{
 			float x = -halfWidth + j * dx;
 
-			mVertices[i * n + j].position = glm::vec3(x, 0.0f, z);
-			mVertices[i * n + j].normal = glm::vec3(0.0f, 1.0f, 0.0f);
-			// mVertices[i * n + j].TangentU = glm::vec3(1.0f, 0.0f, 0.0f);
+			vertices[i * n + j].position = glm::vec3(x, 0.0f, z);
+			vertices[i * n + j].normal = glm::vec3(0.0f, 1.0f, 0.0f);
+			// vertices[i * n + j].TangentU = glm::vec3(1.0f, 0.0f, 0.0f);
 
 			// Stretch texture over grid.
-			mVertices[i * n + j].texCoord.x = j * du;
-			mVertices[i * n + j].texCoord.y = i * dv;
+			vertices[i * n + j].texCoord.x = j * du;
+			vertices[i * n + j].texCoord.y = i * dv;
 		}
 	}
 
@@ -126,7 +132,7 @@ Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, ui
 	// Create the indices.
 	//
 
-	mIndices.resize(faceCount * 3); // 3 indices per face
+	indices.resize(faceCount * 3); // 3 indices per face
 
 	// Iterate over each quad and compute indices.
 	uint32_t k = 0;
@@ -134,23 +140,26 @@ Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, ui
 	{
 		for (uint32_t j = 0; j < n - 1; ++j)
 		{
-			mIndices[k] = i * n + j;
-			mIndices[k + 1] = i * n + j + 1;
-			mIndices[k + 2] = (i + 1) * n + j;
-
-			mIndices[k + 3] = (i + 1) * n + j;
-			mIndices[k + 4] = i * n + j + 1;
-			mIndices[k + 5] = (i + 1) * n + j + 1;
+			indices[k] = i * n + j;
+			indices[k + 1] = i * n + j + 1;
+			indices[k + 2] = (i + 1) * n + j;
+			
+			indices[k + 3] = (i + 1) * n + j;
+			indices[k + 4] = i * n + j + 1;
+			indices[k + 5] = (i + 1) * n + j + 1;
 
 			k += 6; // next quad
 		}
 	}
 
-	return Mesh(mVertices, mIndices);
+	return Mesh(vertices, indices);
 }
 
 Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uint32_t stackCount)
 {
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 	//
 	// Compute the vertices stating at the top pole and moving down the stacks.
 	//
@@ -161,7 +170,7 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 	Vertex topVertex(0.0f, +radius, 0.0f, 0.0f, +1.0f, 0.0f, 0.0f, 0.0f);
 	Vertex bottomVertex(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f);
 
-	mVertices.push_back(topVertex);
+	vertices.push_back(topVertex);
 
 	float phiStep = glm::pi<float>() / stackCount;
 	float thetaStep = 2.0f * glm::pi<float>() / sliceCount;
@@ -188,19 +197,18 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 			// v.TangentU.y = 0.0f;
 			// v.TangentU.z = +radius * sinf(phi) * cosf(theta);
 
-			// XMVECTOR T = XMLoadFloat3(&v.TangentU);
-			// XMStoreFloat3(&v.TangentU, XMVector3Normalize(T));
+			// v.TangentU = glm::normalize(v.TangentU);
 
 			v.normal = glm::normalize(v.position);
 
 			v.texCoord.x = theta / (2 * glm::pi<float>());
 			v.texCoord.y = phi / glm::pi<float>();
 
-			mVertices.push_back(v);
+			vertices.push_back(v);
 		}
 	}
 
-	mVertices.push_back(bottomVertex);
+	vertices.push_back(bottomVertex);
 
 	//
 	// Compute indices for top stack.  The top stack was written first to the vertex buffer
@@ -209,9 +217,9 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 
 	for (uint32_t i = 1; i <= sliceCount; ++i)
 	{
-		mIndices.push_back(0);
-		mIndices.push_back(i + 1);
-		mIndices.push_back(i);
+		indices.push_back(0);
+		indices.push_back(i + 1);
+		indices.push_back(i);
 	}
 
 	//
@@ -226,13 +234,13 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 	{
 		for (uint32_t j = 0; j < sliceCount; ++j)
 		{
-			mIndices.push_back(baseIndex + i * ringVertexCount + j);
-			mIndices.push_back(baseIndex + i * ringVertexCount + j + 1);
-			mIndices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
-
-			mIndices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
-			mIndices.push_back(baseIndex + i * ringVertexCount + j + 1);
-			mIndices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
+			indices.push_back(baseIndex + i * ringVertexCount + j);
+			indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+			indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+			
+			indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
+			indices.push_back(baseIndex + i * ringVertexCount + j + 1);
+			indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
 		}
 	}
 
@@ -242,19 +250,19 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 	//
 
 	// South pole vertex was added last.
-	uint32_t southPoleIndex = static_cast<uint32_t>(mVertices.size() - 1);
+	uint32_t southPoleIndex = static_cast<uint32_t>(vertices.size() - 1);
 
 	// Offset the indices to the index of the first vertex in the last ring.
 	baseIndex = southPoleIndex - ringVertexCount;
 
 	for (uint32_t i = 0; i < sliceCount; ++i)
 	{
-		mIndices.push_back(southPoleIndex);
-		mIndices.push_back(baseIndex + i);
-		mIndices.push_back(baseIndex + i + 1);
+		indices.push_back(southPoleIndex);
+		indices.push_back(baseIndex + i);
+		indices.push_back(baseIndex + i + 1);
 	}
 
-	return Mesh(mVertices, mIndices);
+	return Mesh(vertices, indices);
 }
 
 Mesh BasicGeometryGenerator::CreateTerrain(const unsigned char* heightValues,
@@ -302,7 +310,7 @@ Mesh BasicGeometryGenerator::CreateTerrain(const unsigned char* heightValues,
 	return Mesh(vertices, indices);
 }
 
-Mesh BasicGeometryGenerator::CreateTerrainPatches(int width, int height, UINT countOfPatches)
+Mesh BasicGeometryGenerator::CreateTerrainPatches(int width, int height, uint32_t countOfPatches)
 {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -311,9 +319,9 @@ Mesh BasicGeometryGenerator::CreateTerrainPatches(int width, int height, UINT co
 	indices.reserve(countOfPatches * countOfPatches);
 
 	// vertex generation
-	for (UINT i = 0; i <= countOfPatches; i++)
+	for (uint32_t i = 0; i <= countOfPatches; i++)
 	{
-		for (UINT j = 0; j <= countOfPatches; j++)
+		for (uint32_t j = 0; j <= countOfPatches; j++)
 		{
 			// vertex
 			Vertex vertex;
@@ -332,9 +340,9 @@ Mesh BasicGeometryGenerator::CreateTerrainPatches(int width, int height, UINT co
 	}
 
 	// index generation
-	for (int i = 0; i <= countOfPatches - 1; i++) // for each row a.k.a. each strip
+	for (uint32_t i = 0; i <= countOfPatches - 1; i++) // for each row a.k.a. each strip
 	{
-		for (int j = 0; j <= countOfPatches - 1; j++) // for each column
+		for (uint32_t j = 0; j <= countOfPatches - 1; j++) // for each column
 		{
 			indices.push_back(static_cast<UINT>(j + i * (countOfPatches + 1)));
 			indices.push_back(static_cast<UINT>(j + (i + 1) * (countOfPatches + 1)));

@@ -66,6 +66,12 @@
     <ClCompile Include="imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\cores\Framebuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cores\Renderbuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -122,6 +128,12 @@
     <ClInclude Include="imgui\imstb_truetype.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\cores\Framebuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\cores\Renderbuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\shaders\opaque.frag">
@@ -134,6 +146,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="..\..\resources\shaders\pbr.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\resources\shaders\cubemap.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\resources\shaders\cubemap.frag">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

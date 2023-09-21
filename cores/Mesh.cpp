@@ -10,8 +10,6 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& ind
 	vertexByteSize = (uint32_t)mVertices.size() * sizeof(Vertex);
 	indexByteSize = (uint32_t)mIndices.size() * sizeof(uint32_t);
 }
-Mesh::~Mesh()
-{ }
 
 void Mesh::ConfigureMesh(GLenum usage)
 {
@@ -41,7 +39,7 @@ void Mesh::ConfigureMesh(GLenum usage)
 	
 	glBindVertexArray(0);
 }
-void Mesh::DeleteMemory()
+void Mesh::DeleteMesh()
 {
 	glDeleteVertexArrays(1, &mVertexAttribArray);
 	glDeleteBuffers(1, &mIndexBuffer);
