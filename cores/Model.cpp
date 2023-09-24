@@ -179,7 +179,7 @@ void Model::LoadTexture(aiMaterial* mat, aiTextureType textureType,
 		if (!skip)
 		{
 			texture.SetTextureFileName(pathName);
-			texture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+			texture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true);
 
 			textureContainer.push_back(texture);
 

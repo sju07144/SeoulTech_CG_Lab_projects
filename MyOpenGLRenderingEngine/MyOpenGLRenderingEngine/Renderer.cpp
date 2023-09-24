@@ -297,7 +297,7 @@ void Renderer::BuildTextures()
 {
 	Texture woodTexture(mTextureDirectoryName + "wood.jpg");
 	std::string texName = "woodAlbedoMap";
-	woodTexture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+	woodTexture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true);
 	mBasicTextures.insert({ texName, std::move(woodTexture) });
 
 	std::string directoryName = mTextureDirectoryName + "rustediron1-alt2-bl\\";
@@ -307,7 +307,7 @@ void Renderer::BuildTextures()
 	{
 		std::string fileName(directoryName + texName + textureNames[i] + ".png");
 		Texture rustediron2Texture(fileName);
-		rustediron2Texture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+		rustediron2Texture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true);
 		mBasicTextures.insert({ texName + textureNames[i], std::move(rustediron2Texture) });
 	}
 

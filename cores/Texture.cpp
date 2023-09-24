@@ -21,7 +21,7 @@ uint32_t Texture::GetTexture()
 }
 
 void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType, 
-	GLenum minFilterType, GLenum magFilterType, 
+	GLenum minFilterType, GLenum magFilterType, bool isMipmap,
 	bool nullData, int width, int height, GLenum textureFormat)
 {
 	glGenTextures(1, &mTexture);
@@ -38,7 +38,8 @@ void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType,
 	if (nullData)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, textureFormat, width, height, 0, textureFormat, GL_UNSIGNED_BYTE, nullptr);
-		glGenerateMipmap(GL_TEXTURE_2D);
+		if (isMipmap)
+			glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else
 	{
@@ -57,7 +58,67 @@ void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType,
 				format = GL_RGBA;
 
 			glTexImage2D(GL_TEXTURE_2D, 0, format, _width, _height, 0, format, GL_UNSIGNED_BYTE, data);
+			if (isMipmap)
+				glGenerateMipmap(GL_TEXTURE_2D);
+			stbi_image_free(data);
+		}
+		else
+		{
+			std::cout << "Failed to load texture" << std::endl;
+			stbi_image_free(data);
+		}
+	}
+}
+
+void Texture::CreateHDRTexture2D(GLenum wrapSType, GLenum wrapTType, 
+	GLenum minFilterType, GLenum magFilterType, bool isMipmap,
+	bool nullData, int width, int height, GLenum textureInternalFormat, GLenum textureFormat)
+{
+	glGenTextures(1, &mTexture);
+	glBindTexture(GL_TEXTURE_2D, mTexture);
+
+	// Set the texture wrapping parameters.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapSType);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapTType);
+
+	// Set texture filtering parameters.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilterType);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilterType);
+
+	if (nullData)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, textureInternalFormat, width, height, 0, textureFormat, GL_FLOAT, nullptr);
+		if (isMipmap)
 			glGenerateMipmap(GL_TEXTURE_2D);
+	}
+	else
+	{
+		// Load image, create texture and generate mipmaps.
+		int _width, _height, _nrChannels;
+		stbi_set_flip_vertically_on_load(true);
+		float* data = stbi_loadf(mTextureFileName.c_str(), &_width, &_height, &_nrChannels, 0);
+		if (data)
+		{
+			GLenum internalFormat, format;
+			if (_nrChannels == 1)
+			{
+				internalFormat = GL_RED;
+				format = GL_RED;
+			}
+			else if (_nrChannels == 3)
+			{
+				internalFormat = GL_RGB16F;
+				format = GL_RGB;
+			}
+			else if (_nrChannels == 4)
+			{
+				internalFormat = GL_RGBA16F;
+				format = GL_RGB16F;
+			}
+
+			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, _width, _height, 0, format, GL_FLOAT, data);
+			if (isMipmap)
+				glGenerateMipmap(GL_TEXTURE_2D);
 			stbi_image_free(data);
 		}
 		else
@@ -70,33 +131,48 @@ void Texture::CreateTexture2D(GLenum wrapSType, GLenum wrapTType,
 
 void Texture::CreateTextureCube(const std::vector<std::string>& fileNames, 
 	GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
-	GLenum minFilterType, GLenum magFilterType, GLenum textureFormat)
+	GLenum minFilterType, GLenum magFilterType, 
+	bool nullData, int width, int height, GLenum textureFormat)
 {
 	glGenTextures(1, &mTexture);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);
 
-	int width, height, nrChannels;
-	for (uint32_t i = 0; i < fileNames.size(); i++)
-	{
-		unsigned char* data = stbi_load(fileNames[i].c_str(), &width, &height, &nrChannels, 0);
-		if (data)
-		{
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-				0, textureFormat, width, height, 0, textureFormat, GL_UNSIGNED_BYTE, data
-			);
-			stbi_image_free(data);
-		}
-		else
-		{
-			std::cout << "Cubemap tex failed to load at path: " << fileNames[i] << std::endl;
-			stbi_image_free(data);
-		}
-	}
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, minFilterType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, magFilterType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, wrapSType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, wrapTType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, wrapRType);
+
+	if (nullData)
+	{
+		for (uint32_t i = 0; i < 6; i++)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+				0, textureFormat, width, height, 0, textureFormat, GL_UNSIGNED_BYTE, nullptr
+			);
+		}
+	}
+
+	else
+	{
+		int _width, _height, nrChannels;
+		for (uint32_t i = 0; i < fileNames.size(); i++)
+		{
+			unsigned char* data = stbi_load(fileNames[i].c_str(), &_width, &_height, &nrChannels, 0);
+			if (data)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+					0, textureFormat, _width, _height, 0, textureFormat, GL_UNSIGNED_BYTE, data
+				);
+				stbi_image_free(data);
+			}
+			else
+			{
+				std::cout << "Cubemap tex failed to load at path: " << fileNames[i] << std::endl;
+				stbi_image_free(data);
+			}
+		}
+	}
 }
 
 void Texture::DeleteTexture()
