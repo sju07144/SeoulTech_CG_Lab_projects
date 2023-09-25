@@ -10,9 +10,13 @@ public:
 
 	uint32_t GetFramebuffer();
 
-	void CreateFramebuffer(uint32_t width, uint32_t height, uint32_t colorAttachmentCount = 1, bool isDepthStencilAttachment = true);
+	void CreateFramebuffer(uint32_t width, uint32_t height, 
+		uint32_t colorAttachmentCount = 1, bool isDefaultTexture2D = true,
+		bool isDepthAttachment = true, bool isStencilAttachment = false);
 
 	void DeleteFramebuffer();
+
+	void ResizeDepthStencilBuffer(uint32_t width, uint32_t height);
 private:
 	uint32_t mFramebuffer = 0;
 

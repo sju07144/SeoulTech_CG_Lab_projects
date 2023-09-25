@@ -78,12 +78,15 @@ out vec4 color;
 
 uniform bool isUsingTexture;
 uniform bool isUsingNormalMap;
+uniform bool enableIrradianceMap;
 
 uniform Material material;
 uniform sampler2D albedoMap0;
 uniform sampler2D normalMap0;
 uniform sampler2D metallicMap0;
 uniform sampler2D roughnessMap0;
+
+uniform samplerCube irradianceMap;
 
 uniform SceneConstant sceneConstant;
 
@@ -94,6 +97,7 @@ float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 vec3 FresnelSchlick(float cosTheta, vec3 F0);
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);   
 
 vec3 BlinnPhong(vec3 ambient, vec3 diffuse, vec3 specular,
 	float shininess, vec3 surfaceColor,
@@ -150,8 +154,21 @@ void main()
 
 	// ambient lighting (note that the next IBL tutorial will replace 
     // this ambient lighting with environment lighting).
-	vec3 ambient = vec3(0.03f) * albedo * ao;
-
+	vec3 ambient = vec3(0.002f);
+	if (enableIrradianceMap)
+	{
+		vec3 kS = FresnelSchlick(max(dot(N, V), 0.0f), F0);
+		vec3 kD = 1.0f - kS;
+		kD *= 1.0f - metallic;	  
+		vec3 irradiance = texture(irradianceMap, N).rgb;
+		vec3 diffuse = irradiance * albedo;
+		ambient = (kD * diffuse) * ao;
+	}
+	else
+	{
+		ambient = ambient * albedo * ao;
+	}
+	
 	vec3 result = ambient + pointLightColor;
 
 	// HDR tonemapping
@@ -218,6 +235,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
 	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+}   
 
 vec3 CalculatePointLight(PointLight light,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,

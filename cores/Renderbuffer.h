@@ -10,7 +10,10 @@ public:
 
 	void DeleteRenderbuffer();
 
-	void CreateRenderbuffer(uint32_t width, uint32_t height);
+	void CreateRenderbuffer(uint32_t width, uint32_t height, bool isStencilAttachment = false);
+
+	void ResizeRenderbuffer(uint32_t width, uint32_t height);
 private:
 	uint32_t mRenderbuffer = 0;
+	bool mIsStencilAttachment = false;
 };

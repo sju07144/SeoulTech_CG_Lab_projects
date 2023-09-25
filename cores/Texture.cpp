@@ -6,10 +6,19 @@ Texture::Texture(const std::string& textureFileName)
 	mTextureFileName = textureFileName;
 }
 
+Texture::Texture(const std::vector<std::string>& cubeMapFileNames)
+{
+	mCubeMapFileNames = cubeMapFileNames;
+}
+
 // public methods
 void Texture::SetTextureFileName(const std::string& textureFileName)
 {
 	mTextureFileName = textureFileName;
+}
+void Texture::SetCubeMapFileName(const std::vector<std::string>& cubeMapFileNames)
+{
+	mCubeMapFileNames = cubeMapFileNames;
 }
 std::string Texture::GetTextureFileName()
 {
@@ -129,8 +138,7 @@ void Texture::CreateHDRTexture2D(GLenum wrapSType, GLenum wrapTType,
 	}
 }
 
-void Texture::CreateTextureCube(const std::vector<std::string>& fileNames, 
-	GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
+void Texture::CreateTextureCube(GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
 	GLenum minFilterType, GLenum magFilterType, 
 	bool nullData, int width, int height, GLenum textureFormat)
 {
@@ -156,9 +164,10 @@ void Texture::CreateTextureCube(const std::vector<std::string>& fileNames,
 	else
 	{
 		int _width, _height, nrChannels;
-		for (uint32_t i = 0; i < fileNames.size(); i++)
+		// stbi_set_flip_vertically_on_load(true);
+		for (uint32_t i = 0; i < mCubeMapFileNames.size(); i++)
 		{
-			unsigned char* data = stbi_load(fileNames[i].c_str(), &_width, &_height, &nrChannels, 0);
+			unsigned char* data = stbi_load(mCubeMapFileNames[i].c_str(), &_width, &_height, &nrChannels, 0);
 			if (data)
 			{
 				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
@@ -168,7 +177,53 @@ void Texture::CreateTextureCube(const std::vector<std::string>& fileNames,
 			}
 			else
 			{
-				std::cout << "Cubemap tex failed to load at path: " << fileNames[i] << std::endl;
+				std::cout << "Cubemap tex failed to load at path: " << mCubeMapFileNames[i] << std::endl;
+				stbi_image_free(data);
+			}
+		}
+	}
+}
+
+void Texture::CreateHDRTextureCube(GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
+	GLenum minFilterType, GLenum magFilterType, 
+	bool nullData, int width, int height, GLenum textureInternalFormat, GLenum textureFormat)
+{
+	glGenTextures(1, &mTexture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mTexture);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, minFilterType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, magFilterType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, wrapSType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, wrapTType);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, wrapRType);
+
+	if (nullData)
+	{
+		for (uint32_t i = 0; i < 6; i++)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+				0, textureInternalFormat, width, height, 0, textureFormat, GL_FLOAT, nullptr
+			);
+		}
+	}
+
+	else
+	{
+		int _width, _height, nrChannels;
+		// stbi_set_flip_vertically_on_load(true);
+		for (uint32_t i = 0; i < mCubeMapFileNames.size(); i++)
+		{
+			float* data = stbi_loadf(mCubeMapFileNames[i].c_str(), &_width, &_height, &nrChannels, 0);
+			if (data)
+			{
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+					0, textureInternalFormat, _width, _height, 0, textureFormat, GL_FLOAT, data
+				);
+				stbi_image_free(data);
+			}
+			else
+			{
+				std::cout << "Cubemap tex failed to load at path: " << mCubeMapFileNames[i] << std::endl;
 				stbi_image_free(data);
 			}
 		}
