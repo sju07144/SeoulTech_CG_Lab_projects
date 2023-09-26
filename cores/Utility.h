@@ -89,3 +89,5 @@ void SetMat3(uint32_t programID, const std::string& name, const glm::mat3& mat);
 void SetMat4(uint32_t programID, const std::string& name, const glm::mat4& mat);
 
 std::vector<std::string> Split(std::string input, char delimiter);
+
+void SaveScreenshotToPNG(const std::string& filename, uint32_t width, uint32_t height);
