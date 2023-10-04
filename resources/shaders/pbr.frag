@@ -69,7 +69,7 @@ struct VS_OUT
 };
 
 #define NUM_DIRECTIONAL_LIGHTS 0
-#define NUM_POINT_LIGHTS 1
+#define NUM_POINT_LIGHTS 4
 #define NUM_SPOT_LIGHTS 0
 
 in VS_OUT vs_out;
@@ -78,7 +78,7 @@ out vec4 color;
 
 uniform bool isUsingTexture;
 uniform bool isUsingNormalMap;
-uniform bool enableIrradianceMap;
+uniform bool enableImageBasedLighting;
 
 uniform Material material;
 uniform sampler2D albedoMap0;
@@ -87,6 +87,8 @@ uniform sampler2D metallicMap0;
 uniform sampler2D roughnessMap0;
 
 uniform samplerCube irradianceMap;
+uniform samplerCube prefilterMap;
+uniform sampler2D brdfLUT;
 
 uniform SceneConstant sceneConstant;
 
@@ -102,6 +104,9 @@ vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 vec3 BlinnPhong(vec3 ambient, vec3 diffuse, vec3 specular,
 	float shininess, vec3 surfaceColor,
 	vec3 lightDir, vec3 viewDir, vec3 normal);
+vec3 CookTorrance(vec3 lightDir, vec3 radiance,
+	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal);
 vec3 CalculateDirectionalLight(DirectionalLight light, 
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal);
@@ -112,10 +117,15 @@ vec3 CalculateSpotLight(SpotLight light,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal);
 
+vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal, vec3 viewReflection);
+
 void main()
 {
-	vec3 albedo;
-	float metallic, roughness, ao;
+	vec3 albedo = material.kd;
+	float metallic = material.metallic;
+	float roughness = material.roughness;
+	float ao = material.ao;
 	if (isUsingTexture)
 	{
 		albedo = texture(albedoMap0, vs_out.texCoords).rgb;
@@ -123,20 +133,13 @@ void main()
 		roughness = texture(roughnessMap0, vs_out.texCoords).r;
 		ao = material.ao;
 	}
-	else
-	{
-		albedo = material.kd;
-		metallic = material.metallic;
-		roughness = material.roughness;
-		ao = material.ao;
-	}
 
-	vec3 N;
+	vec3 N = vs_out.normal;
 	if (isUsingNormalMap)
 		N = GetNormalFromMap(normalMap0);
-	else
-		N = vs_out.normal;
+
 	vec3 V = normalize(sceneConstant.cameraPos - vs_out.worldPos);
+	vec3 R = reflect(-V, N);
 
 	// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)   
@@ -152,24 +155,32 @@ void main()
 			V, N);
 	}
 
+	vec3 directionalLightColor = vec3(0.0f);	
+
+	for (int i = 0; i < NUM_DIRECTIONAL_LIGHTS; i++)
+	{
+		directionalLightColor += CalculateDirectionalLight(sceneConstant.directionalLights[i],
+			albedo, metallic, roughness, ao, F0,
+			V, N);
+	}
+
+	vec3 spotLightColor = vec3(0.0f);	
+
+	for (int i = 0; i < NUM_SPOT_LIGHTS; i++)
+	{
+		spotLightColor += CalculateSpotLight(sceneConstant.spotLights[i],
+			albedo, metallic, roughness, ao, F0,
+			V, N);
+	}
+
 	// ambient lighting (note that the next IBL tutorial will replace 
     // this ambient lighting with environment lighting).
 	vec3 ambient = vec3(0.002f);
-	if (enableIrradianceMap)
-	{
-		vec3 kS = FresnelSchlick(max(dot(N, V), 0.0f), F0);
-		vec3 kD = 1.0f - kS;
-		kD *= 1.0f - metallic;	  
-		vec3 irradiance = texture(irradianceMap, N).rgb;
-		vec3 diffuse = irradiance * albedo;
-		ambient = (kD * diffuse) * ao;
-	}
-	else
-	{
-		ambient = ambient * albedo * ao;
-	}
+	ambient = ambient * albedo * ao;
+	if (enableImageBasedLighting)
+		ambient = CalculateImageBasedLight(albedo, metallic, roughness, ao, F0, V, N, R);
 	
-	vec3 result = ambient + pointLightColor;
+	vec3 result = ambient + pointLightColor + directionalLightColor + spotLightColor;
 
 	// HDR tonemapping
 	result = result / (result + vec3(1.0f));
@@ -236,21 +247,17 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
     return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }   
 
-vec3 CalculatePointLight(PointLight light,
+vec3 CookTorrance(vec3 lightDir, vec3 radiance,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal)
 {
 	// calculate per-light radiance
-	vec3 lightDir = normalize(light.position - vs_out.worldPos);
 	vec3 halfway = normalize(viewDir + lightDir);
-	float distance = length(light.position - vs_out.worldPos);
-	float attenuation = 1.0f / (distance * distance);
-	vec3 radiance = light.diffuse * attenuation;
 
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(normal, halfway, roughness);
@@ -258,7 +265,7 @@ vec3 CalculatePointLight(PointLight light,
 	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0f), F0);
 
 	vec3 numerator = NDF * G * F;
-	float denominator = 4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f) + 0.0001; // + 0.0001 to prevent divide by zero
+	float denominator = 4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f) + 0.0001f; // + 0.0001 to prevent divide by zero
 	vec3 specular = numerator / denominator;
 
 	// kS is equal to Fresnel
@@ -270,10 +277,79 @@ vec3 CalculatePointLight(PointLight light,
 	// multiply kD by the inverse metalness such that only non-metals 
     // have diffuse lighting, or a linear blend if partly metal (pure metals
     // have no diffuse light).
-	kD *= 1.0f - metallic;
+	kD *= (1.0f - metallic);
 
 	// scale light by NdotL
 	float NdotL = max(dot(normal, lightDir), 0.0f);
 
 	return (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+}
+
+vec3 CalculatePointLight(PointLight light,
+	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal)
+{
+	// calculate per-light radiance
+	vec3 lightDir = normalize(light.position - vs_out.worldPos);
+	float distance = length(light.position - vs_out.worldPos);
+	float attenuation = 1.0f / (distance * distance);
+	vec3 radiance = light.diffuse * attenuation;
+
+	return CookTorrance(lightDir, radiance,
+		albedo, metallic, roughness, ao, F0,
+		viewDir, normal);
+}
+
+vec3 CalculateDirectionalLight(DirectionalLight light, 
+	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal)
+{
+	vec3 lightDir = normalize(-light.direction);
+
+	vec3 radiance = light.diffuse;
+
+	return CookTorrance(lightDir, radiance,
+		albedo, metallic, roughness, ao, F0,
+		viewDir, normal);
+}
+
+vec3 CalculateSpotLight(SpotLight light,
+	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal)
+{
+	// calculate per-light radiance
+	vec3 lightDir = normalize(light.position - vs_out.worldPos);
+
+	float theta = dot(lightDir, normalize(-light.direction)); 
+    float epsilon = (light.cutOff - light.outerCutOff);
+    float intensity = clamp((theta - light.outerCutOff) / epsilon, 0.0, 1.0);
+
+	float distance = length(light.position - vs_out.worldPos);
+	float attenuation = 1.0f / (distance * distance);
+	vec3 radiance = light.diffuse * attenuation * intensity;
+
+	return CookTorrance(lightDir, radiance,
+		albedo, metallic, roughness, ao, F0,
+		viewDir, normal);
+}
+
+vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
+	vec3 viewDir, vec3 normal, vec3 viewReflection)
+{
+	vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0f), F0, roughness);
+
+	vec3 kS = F;
+	vec3 kD = 1.0f - kS;
+	kD *= (1.0f - metallic);
+	
+	vec3 irradiance = texture(irradianceMap, normal).rgb;
+	vec3 diffuse = irradiance * albedo;
+
+	// sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
+	const float MAX_REFLECTION_LOD = 4.0;
+	vec3 prefilteredColor = textureLod(prefilterMap, viewReflection, roughness * MAX_REFLECTION_LOD).rgb;
+	vec2 brdf = texture(brdfLUT, vec2(max(dot(normal, viewDir), 0.0), roughness)).rg;
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	
+	return (kD * diffuse + specular) * ao;
 }

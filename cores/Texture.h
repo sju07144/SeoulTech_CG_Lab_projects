@@ -20,10 +20,10 @@ public:
 		GLenum minFilterType, GLenum magFilterType, bool isMipmap = false,
 		bool nullData = false, int width = 0, int height = 0, GLenum textureInternalFormat = GL_RGB16F, GLenum textureFormat = GL_RGB);
 	void CreateTextureCube(GLenum wrapSType, GLenum wrapTType, GLenum wrapRType, 
-		GLenum minFilterType, GLenum magFilterType, 
+		GLenum minFilterType, GLenum magFilterType, bool isMipmap = false,
 		bool nullData = false, int width = 0, int height = 0, GLenum textureFormat = GL_RGB);
 	void CreateHDRTextureCube(GLenum wrapSType, GLenum wrapTType, GLenum wrapRType,
-		GLenum minFilterType, GLenum magFilterType,
+		GLenum minFilterType, GLenum magFilterType, bool isMipmap = false,
 		bool nullData = false, int width = 0, int height = 0, GLenum textureInternalFormat = GL_RGB16F, GLenum textureFormat = GL_RGB);
 
 	void DeleteTexture();

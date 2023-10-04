@@ -160,5 +160,14 @@
     <None Include="..\..\resources\shaders\irradianceMap.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\..\resources\shaders\brdf.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\resources\shaders\brdf.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\resources\shaders\prefilterMap.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

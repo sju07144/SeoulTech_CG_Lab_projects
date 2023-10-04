@@ -118,12 +118,13 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>E:\SeoulTech_CG_Lab_projects\Libraries\OpenGLLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>E:\SeoulTech_CG_Lab_projects\Libraries\OpenGLLibrary\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;assimp-vc142-mtd.lib;glfw3.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;assimp-vc142-mtd.lib;glfw3.lib;glfw3_mt.lib;glfw3dll.lib;opencv_world480d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -136,6 +137,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>E:\SeoulTech_CG_Lab_projects\Libraries\OpenGLLibrary\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <DisableSpecificWarnings>4819</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,7 +145,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>E:\SeoulTech_CG_Lab_projects\Libraries\OpenGLLibrary\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;assimp-vc142-mtd.lib;glfw3.lib;glfw3_mt.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;assimp-vc142-mtd.lib;glfw3.lib;glfw3_mt.lib;glfw3dll.lib;opencv_world480d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -190,6 +192,8 @@
     <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\resources\shaders\brdf.frag" />
+    <None Include="..\..\resources\shaders\brdf.vert" />
     <None Include="..\..\resources\shaders\cubemapHDR.frag" />
     <None Include="..\..\resources\shaders\cubemapHDR.vert" />
     <None Include="..\..\resources\shaders\equirectangularToCube.frag" />
@@ -198,6 +202,7 @@
     <None Include="..\..\resources\shaders\opaque.vert" />
     <None Include="..\..\resources\shaders\pbr.frag" />
     <None Include="..\..\resources\shaders\pbr.vert" />
+    <None Include="..\..\resources\shaders\prefilterMap.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

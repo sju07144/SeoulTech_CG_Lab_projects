@@ -53,6 +53,8 @@ struct RenderItem
 	Texture* environmentMap = nullptr;
 	Texture* equirectangularMap = nullptr;
 	Texture* irradianceMap = nullptr;
+	Texture* prefilterMap = nullptr;
+	Texture* brdfLUT = nullptr;
 };
 
 struct Menu
@@ -60,7 +62,7 @@ struct Menu
 	bool isUsingTexture = false;
 	bool isUsingNormalMap = false;
 	bool enableEnvironment = false;
-	bool enableIrradianceMap = false;
+	bool enableImageBasedLighting = false;
 };
 
 
@@ -107,7 +109,7 @@ private:
 
 	void BuildRenderItems();
 	void DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool isEnvironmentMap = false);
-	void DrawIrradianceMapRenderItems();
+	void DrawImageBasedLightRenderItems();
 private:
 	// Window size variables.
 	uint32_t mWindowWidth;
@@ -146,11 +148,12 @@ private:
 	
 	std::unordered_map<RenderLayer, std::vector<RenderItem>> mAllRenderItems;
 
-	RenderItem mIrradianceMapRenderItem;
+	RenderItem mImageBasedLightRenderItem;
 
 	std::string mShaderDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\";
 	std::string mTextureDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\";
 	std::string mModelDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\models\\";
+	std::string mImageDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\images\\";
 
 	// mouse variables
 	float mLastMousePosX = 0.0f;

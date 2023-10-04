@@ -364,26 +364,26 @@ Mesh BasicGeometryGenerator::CreateQuad(float x, float y, float w, float h, floa
 
 	// Position coordinates specified in NDC space.
 	vertices[0] = Vertex(
-		x, y - h, depth,
-		0.0f, 0.0f, -1.0f,
+		x, y + h, depth,
+		0.0f, 0.0f, 1.0f,
 		// 1.0f, 0.0f, 0.0f,
 		0.0f, 1.0f);
 
 	vertices[1] = Vertex(
 		x, y, depth,
-		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f, 1.0f,
 		// 1.0f, 0.0f, 0.0f,
 		0.0f, 0.0f);
 
 	vertices[2] = Vertex(
 		x + w, y, depth,
-		0.0f, 0.0f, -1.0f,
+		0.0f, 0.0f, 1.0f,
 		// 1.0f, 0.0f, 0.0f,
 		1.0f, 0.0f);
 
 	vertices[3] = Vertex(
-		x + w, y - h, depth,
-		0.0f, 0.0f, -1.0f,
+		x + w, y + h, depth,
+		0.0f, 0.0f, 1.0f,
 		// 1.0f, 0.0f, 0.0f,
 		1.0f, 1.0f);
 
