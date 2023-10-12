@@ -66,6 +66,8 @@ struct VS_OUT
 	vec3 worldPos;
 	vec3 normal;
 	vec2 texCoords;
+
+	mat3 TBN;
 };
 
 #define NUM_DIRECTIONAL_LIGHTS 0
@@ -95,6 +97,7 @@ uniform SceneConstant sceneConstant;
 const float PI = 3.14159265359f;
 
 vec3 GetNormalFromMap(sampler2D normalMap);
+vec3 GetNormalFromMapWithPreCalculatedTBN(sampler2D normalMap);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
@@ -136,7 +139,7 @@ void main()
 
 	vec3 N = vs_out.normal;
 	if (isUsingNormalMap)
-		N = GetNormalFromMap(normalMap0);
+		N = GetNormalFromMapWithPreCalculatedTBN(normalMap0);
 
 	vec3 V = normalize(sceneConstant.cameraPos - vs_out.worldPos);
 	vec3 R = reflect(-V, N);
@@ -205,6 +208,13 @@ vec3 GetNormalFromMap(sampler2D normalMap)
 	mat3 TBN = mat3(T, B, N);
 
 	return normalize(TBN * tangentNormal);
+}
+
+vec3 GetNormalFromMapWithPreCalculatedTBN(sampler2D normalMap)
+{
+	vec3 tangentNormal = texture(normalMap, vs_out.texCoords).xyz * 2.0f - 1.0f;
+
+	return normalize(vs_out.TBN * tangentNormal);
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)

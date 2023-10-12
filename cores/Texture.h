@@ -1,6 +1,34 @@
 #pragma once
 #include "Stdafx.h"
 
+struct TextureInfo
+{
+	// texture format
+	GLenum textureInternalFormat = GL_RGB;
+	GLenum textureFormat = GL_RGB;
+
+	// wrapping type
+	GLenum wrapSType;
+	GLenum wrapTType;
+	GLenum wrapRType; // using texture cube
+
+	// filter type
+	GLenum minFilterType;
+	GLenum magFilterType;
+
+	// is null data
+	bool nullData = false;
+
+	// texture size
+	int width = 0, height = 0;
+
+	// can generate mipmap
+	bool isMipmap = false;
+
+	// is HDR;
+	bool isHDR = false;
+};
+
 class Texture
 {
 public:
@@ -25,6 +53,11 @@ public:
 	void CreateHDRTextureCube(GLenum wrapSType, GLenum wrapTType, GLenum wrapRType,
 		GLenum minFilterType, GLenum magFilterType, bool isMipmap = false,
 		bool nullData = false, int width = 0, int height = 0, GLenum textureInternalFormat = GL_RGB16F, GLenum textureFormat = GL_RGB);
+
+	void CreateTexture2D(const TextureInfo& textureSetup);
+	void CreateHDRTexture2D(const TextureInfo& textureSetup);
+	void CreateTextureCube(const TextureInfo& textureSetup);
+	void CreateHDRTextureCube(const TextureInfo& textureSetup);
 
 	void DeleteTexture();
 private:

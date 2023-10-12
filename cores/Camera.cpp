@@ -44,6 +44,10 @@ mat4 Camera::GetProjection()
 {
 	return mProjection;
 }
+glm::mat4 Camera::GetOrthoProjection()
+{
+	return mOrthoProjection;
+}
 
 void Camera::LookAt(
 	const vec3& position,
@@ -80,6 +84,19 @@ void Camera::SetLens(float fovAngleY, float aspectRatio, float zn, float zf)
 	mFarZ = zf;
 
 	mProjection = glm::perspective(fovAngleY, aspectRatio, zn, zf);
+}
+
+void Camera::SetOrthoLens(
+	float left, float right, float bottom, float top, float zn, float zf)
+{
+	mOrthoLeft = left;
+	mOrthoRight = right;
+	mOrthoBottom = bottom;
+	mOrthoTop = top;
+	mOrthoNearZ = zn;
+	mOrthoFarZ = zf;
+
+	mOrthoProjection = glm::ortho<float>(mOrthoLeft, mOrthoRight, mOrthoBottom, mOrthoTop, mOrthoNearZ, mOrthoFarZ); //
 }
 
 void Camera::Strafe(float distance)

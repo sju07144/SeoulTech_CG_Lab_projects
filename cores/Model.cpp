@@ -10,7 +10,7 @@ void Model::LoadModel(const std::string& path)
 	ParseDirectoryName(path);
 
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		throw std::runtime_error("Cannot read the model!");
 
@@ -86,9 +86,12 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.position.y = mesh->mVertices[i].y;
 		vertex.position.z = mesh->mVertices[i].z;
 
-		vertex.normal.x = mesh->mNormals[i].x;
-		vertex.normal.y = mesh->mNormals[i].y;
-		vertex.normal.z = mesh->mNormals[i].z;
+		if (mesh->mNormals)
+		{
+			vertex.normal.x = mesh->mNormals[i].x;
+			vertex.normal.y = mesh->mNormals[i].y;
+			vertex.normal.z = mesh->mNormals[i].z;
+		}
 
 		if (mesh->mTextureCoords[0])
 		{
@@ -97,6 +100,17 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 		}
 		else
 			vertex.texCoord = glm::vec2(0.0f, 0.0f);
+
+		if (mesh->mTangents)
+		{
+			vertex.tangent.x = mesh->mTangents[i].x;
+			vertex.tangent.y = mesh->mTangents[i].y;
+			vertex.tangent.z = mesh->mTangents[i].z;
+		}
+		else
+		{
+			vertex.tangent = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
 
 		vertices.push_back(vertex);
 	}
@@ -139,6 +153,9 @@ void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
 			LoadTexture(material, aiTextureType_DIFFUSE, "albedoMap", modelComponent.albedoMaps);
 			LoadTexture(material, aiTextureType_SPECULAR, "specularMap", modelComponent.specularMaps);
+			LoadTexture(material, aiTextureType_NORMALS, "normalMap", modelComponent.normalMaps);
+			LoadTexture(material, aiTextureType_METALNESS, "metallicMap", modelComponent.metallicMaps);
+			LoadTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, "roughnessMap", modelComponent.roughnessMaps);
 		}
 	}
 

@@ -85,7 +85,7 @@ void Renderer::Initialize()
 
 	// Load models
 	// model은 LoadModel 호출만으로 configuremesh, buildtexture 동시에 호출
-	// mMiniModel.LoadModel(mModelDirectoryName + "backpack\\backpack.obj");
+	mMiniModel.LoadModel(mModelDirectoryName + "Cerberus_by_Andrew_Maximov\\Cerberus_LP.fbx");
 
 	// Initialize scene constants
 	InitializeSceneConstant();
@@ -284,6 +284,13 @@ void Renderer::UpdateSceneConstants()
 
 void Renderer::BuildTextures()
 {
+	TextureInfo textureSetup;
+	textureSetup.wrapSType = GL_REPEAT;
+	textureSetup.wrapTType = GL_REPEAT;
+	textureSetup.minFilterType = GL_LINEAR_MIPMAP_LINEAR;
+	textureSetup.magFilterType = GL_LINEAR;
+	textureSetup.isMipmap = true;
+
 	Texture woodTexture(mTextureDirectoryName + "wood.jpg");
 	std::string texName = "woodAlbedoMap";
 	woodTexture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true);
@@ -349,62 +356,65 @@ void Renderer::BuildMaterials()
 }
 void Renderer::BuildShaders()
 {
+	std::vector<uint32_t> shaderIDs;
+
 	Shader opaqueVertexShader;
 	Shader opaqueFragmentShader;
-	std::vector<uint32_t> opaqueShaderIDs;
 	opaqueVertexShader.CompileShader(mShaderDirectoryName + "opaque.vert", GL_VERTEX_SHADER);
 	opaqueFragmentShader.CompileShader(mShaderDirectoryName + "opaque.frag", GL_FRAGMENT_SHADER);
-	opaqueShaderIDs.push_back(opaqueVertexShader.GetShaderID());
-	opaqueShaderIDs.push_back(opaqueFragmentShader.GetShaderID());
-	LinkPrograms("opaque", opaqueShaderIDs);
+	shaderIDs.push_back(opaqueVertexShader.GetShaderID());
+	shaderIDs.push_back(opaqueFragmentShader.GetShaderID());
+	LinkPrograms("opaque", shaderIDs);
+	shaderIDs.clear();
 
 	Shader pbrVertexShader;
 	Shader pbrFragmentShader;
-	std::vector<uint32_t> pbrShaderIDs;
 	pbrVertexShader.CompileShader(mShaderDirectoryName + "pbr.vert", GL_VERTEX_SHADER);
 	pbrFragmentShader.CompileShader(mShaderDirectoryName + "pbr.frag", GL_FRAGMENT_SHADER);
-	pbrShaderIDs.push_back(pbrVertexShader.GetShaderID());
-	pbrShaderIDs.push_back(pbrFragmentShader.GetShaderID());
-	LinkPrograms("pbr", pbrShaderIDs);
+	shaderIDs.push_back(pbrVertexShader.GetShaderID());
+	shaderIDs.push_back(pbrFragmentShader.GetShaderID());
+	LinkPrograms("pbr", shaderIDs);
+	shaderIDs.clear();
 
 	Shader cubeMapVertexShader;
 	Shader cubeMapFragmentShader;
-	std::vector<uint32_t> cubeMapShaderIDs;
 	cubeMapVertexShader.CompileShader(mShaderDirectoryName + "cubemapHDR.vert", GL_VERTEX_SHADER);
 	cubeMapFragmentShader.CompileShader(mShaderDirectoryName + "cubemapHDR.frag", GL_FRAGMENT_SHADER);
-	cubeMapShaderIDs.push_back(cubeMapVertexShader.GetShaderID());
-	cubeMapShaderIDs.push_back(cubeMapFragmentShader.GetShaderID());
-	LinkPrograms("cubeMapHDR", cubeMapShaderIDs);
+	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(cubeMapFragmentShader.GetShaderID());
+	LinkPrograms("cubeMapHDR", shaderIDs);
+	shaderIDs.clear();
 
 	Shader equirectangularToCubeFragmentShader;
-	std::vector<uint32_t> equirectangularToCubeShaderIDs;
 	equirectangularToCubeFragmentShader.CompileShader(mShaderDirectoryName + "equirectangularToCube.frag", GL_FRAGMENT_SHADER);
-	equirectangularToCubeShaderIDs.push_back(cubeMapVertexShader.GetShaderID());
-	equirectangularToCubeShaderIDs.push_back(equirectangularToCubeFragmentShader.GetShaderID());
-	LinkPrograms("equirectangularToCube", equirectangularToCubeShaderIDs);
+	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(equirectangularToCubeFragmentShader.GetShaderID());
+	LinkPrograms("equirectangularToCube", shaderIDs);
+	shaderIDs.clear();
 
 	Shader irradianceMapFragmentShader;
 	std::vector<uint32_t> irradianceMapShaderIDs;
 	irradianceMapFragmentShader.CompileShader(mShaderDirectoryName + "irradianceMap.frag", GL_FRAGMENT_SHADER);
-	irradianceMapShaderIDs.push_back(cubeMapVertexShader.GetShaderID());
-	irradianceMapShaderIDs.push_back(irradianceMapFragmentShader.GetShaderID());
-	LinkPrograms("irradianceMap", irradianceMapShaderIDs);
+	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(irradianceMapFragmentShader.GetShaderID());
+	LinkPrograms("irradianceMap", shaderIDs);
+	shaderIDs.clear();
 
 	Shader prefilterMapFragmentShader;
-	std::vector<uint32_t> prefilterMapShaderIDs;
 	prefilterMapFragmentShader.CompileShader(mShaderDirectoryName + "prefilterMap.frag", GL_FRAGMENT_SHADER);
-	prefilterMapShaderIDs.push_back(cubeMapVertexShader.GetShaderID());
-	prefilterMapShaderIDs.push_back(prefilterMapFragmentShader.GetShaderID());
-	LinkPrograms("prefilterMap", prefilterMapShaderIDs);
+	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(prefilterMapFragmentShader.GetShaderID());
+	LinkPrograms("prefilterMap", shaderIDs);
+	shaderIDs.clear();
 
 	Shader brdfVertexShader;
 	Shader brdfFragmentShader;
-	std::vector<uint32_t> brdfShaderIDs;
 	brdfVertexShader.CompileShader(mShaderDirectoryName + "brdf.vert", GL_VERTEX_SHADER);
 	brdfFragmentShader.CompileShader(mShaderDirectoryName + "brdf.frag", GL_FRAGMENT_SHADER);
-	brdfShaderIDs.push_back(brdfVertexShader.GetShaderID());
-	brdfShaderIDs.push_back(brdfFragmentShader.GetShaderID());
-	LinkPrograms("brdf", brdfShaderIDs);
+	shaderIDs.push_back(brdfVertexShader.GetShaderID());
+	shaderIDs.push_back(brdfFragmentShader.GetShaderID());
+	LinkPrograms("brdf", shaderIDs);
+	shaderIDs.clear();
 }
 
 void Renderer::BuildFramebuffers()
@@ -475,18 +485,33 @@ void Renderer::BuildRenderItems()
 	renderItem.albedoMaps.push_back(&mBasicTextures["wood"]);
 	mOpaqueRenderItems.push_back(std::move(renderItem));
 
-	// auto& miniModelComponents = mMiniModel.GetModelComponentsByReference();
-	// for (auto& modelComponent : miniModelComponents)
-	// {
-	// 
-	// 	world = glm::mat4(1.0f);
-	// 	// world = glm::scale(world, glm::vec3(0.5f, 0.5f, 0.5f));
-	// 	// world = glm::translate(world, glm::vec3(3.0f, 2.0f, 3.0f));
-	// 	renderItem.world = world;
-	// 	mOpaqueRenderItems.push_back(renderItem);
-	// }
-
 	mAllRenderItems.insert({ RenderLayer::Opaque, mOpaqueRenderItems });
+
+	auto& miniModelComponents = mMiniModel.GetModelComponentsByReference();
+	for (auto& modelComponent : miniModelComponents)
+	{
+		renderItem.mesh = &modelComponent.mesh;
+		world = glm::mat4(1.0f);
+		world = glm::scale(world, glm::vec3(0.05f, 0.05f, 0.05f));
+		world = glm::rotate(world, -glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		world = glm::rotate(world, -glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		world = glm::translate(world, glm::vec3(8.0f, 4.0f, 8.0f));
+		renderItem.world = world;
+
+		for (auto& albedoMap : modelComponent.albedoMaps)
+			renderItem.albedoMaps.push_back(&albedoMap);
+		for (auto& normalMap : modelComponent.normalMaps)
+			renderItem.normalMaps.push_back(&normalMap);
+		for (auto& metallicMap : modelComponent.metallicMaps)
+			renderItem.metallicMaps.push_back(&metallicMap);
+		for (auto& roughnessMap : modelComponent.roughnessMaps)
+			renderItem.roughnessMaps.push_back(&roughnessMap);
+
+		renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
+		renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
+		renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+		mPBRRenderItems.push_back(renderItem);
+	}
 
 	int nrRows = 7;
 	int nrColumns = 7;

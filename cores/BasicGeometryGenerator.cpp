@@ -16,41 +16,41 @@ Mesh BasicGeometryGenerator::CreateBox(float width, float height, float depth)
 	float h2 = 0.5f * height;
 	float d2 = 0.5f * depth;
 
-	// Fill in the back face vertex data.
-	v[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-	v[1] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
-	v[2] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
-	v[3] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
-
 	// Fill in the front face vertex data.
-	v[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-	v[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
-	v[6] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-	v[7] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	v[0] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+	v[1] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[2] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[3] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+
+	// Fill in the back face vertex data.
+	v[4] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+	v[5] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[6] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[7] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
 
 	// Fill in the left face vertex data.
-	v[8] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[9] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[10] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	v[11] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v[8] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
+	v[9] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[10] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v[11] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f);
 
 	// Fill in the right face vertex data.
-	v[12] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[13] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[14] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[15] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-
-	// Fill in the bottom face vertex data.
-	v[16] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f);
-	v[17] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f);
-	v[18] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f);
-	v[19] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f);
+	v[12] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f);
+	v[13] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+	v[14] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f);
+	v[15] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, -1.0f);
 
 	// Fill in the top face vertex data.
-	v[20] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-	v[21] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
-	v[22] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f);
-	v[23] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f);
+	v[16] = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+	v[17] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[18] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v[19] = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
+
+	// Fill in the bottom face vertex data.
+	v[20] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f);
+	v[21] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[22] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v[23] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, -1.0f, 0.0f, 0.0f);
 
 	vertices.assign(&v[0], &v[24]);
 
@@ -60,29 +60,29 @@ Mesh BasicGeometryGenerator::CreateBox(float width, float height, float depth)
 
 	uint32_t i[36];
 
-	// Fill in the back face index data
-	i[0] = 0; i[1] = 3; i[2] = 1;
-	i[3] = 3; i[4] = 0; i[5] = 2;
-
 	// Fill in the front face index data
-	i[6] = 4; i[7] = 5; i[8] = 7;
-	i[9] = 7; i[10] = 6; i[11] = 4;
+	i[0] = 0; i[1] = 1; i[2] = 2;
+	i[3] = 0; i[4] = 2; i[5] = 3;
 
-	// Fill in the left face index data
-	i[12] = 11; i[13] = 10; i[14] = 8;
-	i[15] = 8; i[16] = 9; i[17] = 11;
+	// Fill in the back face index data
+	i[6] = 4; i[7] = 5; i[8] = 6;
+	i[9] = 4; i[10] = 6; i[11] = 7;
 
 	// Fill in the right face index data
-	i[18] = 14; i[19] = 13; i[20] = 15;
-	i[21] = 13; i[22] = 14; i[23] = 12;
+	i[12] = 8; i[13] = 9; i[14] = 10;
+	i[15] = 8; i[16] = 10; i[17] = 11;
 
-	// Fill in the bottom face index data
-	i[24] = 19; i[25] = 18; i[26] = 16;
-	i[27] = 16; i[28] = 17; i[29] = 19;
+	// Fill in the left face index data
+	i[18] = 12; i[19] = 13; i[20] = 14;
+	i[21] = 12; i[22] = 14; i[23] = 15;
 
 	// Fill in the top face index data
-	i[30] = 22; i[31] = 21; i[32] = 23;
-	i[33] = 21; i[34] = 22; i[35] = 20;
+	i[24] = 16; i[25] = 17; i[26] = 18;
+	i[27] = 16; i[28] = 18; i[29] = 19;
+
+	// Fill in the bottom face index data
+	i[30] = 20; i[31] = 21; i[32] = 22;
+	i[33] = 20; i[34] = 22; i[35] = 23;
 
 	indices.assign(&i[0], &i[36]);
 
@@ -120,11 +120,12 @@ Mesh BasicGeometryGenerator::CreateGrid(float width, float depth, uint32_t m, ui
 
 			vertices[i * n + j].position = glm::vec3(x, 0.0f, z);
 			vertices[i * n + j].normal = glm::vec3(0.0f, 1.0f, 0.0f);
-			// vertices[i * n + j].TangentU = glm::vec3(1.0f, 0.0f, 0.0f);
 
 			// Stretch texture over grid.
 			vertices[i * n + j].texCoord.x = j * du;
 			vertices[i * n + j].texCoord.y = i * dv;
+
+			vertices[i * n + j].tangent = glm::vec3(1.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -188,16 +189,16 @@ Mesh BasicGeometryGenerator::CreateSphere(float radius, uint32_t sliceCount, uin
 			Vertex v;
 
 			// spherical to cartesian
-			v.position.x = radius * sinf(phi) * cosf(theta);
+			v.position.x = radius * sinf(phi) * sinf(theta);
 			v.position.y = radius * cosf(phi);
-			v.position.z = radius * sinf(phi) * sinf(theta);
+			v.position.z = radius * sinf(phi) * cosf(theta);
 
 			// Partial derivative of P with respect to theta
-			// v.TangentU.x = -radius * sinf(phi) * sinf(theta);
-			// v.TangentU.y = 0.0f;
-			// v.TangentU.z = +radius * sinf(phi) * cosf(theta);
+			v.tangent.x = +radius * sinf(phi) * cosf(theta);
+			v.tangent.y = 0.0f;
+			v.tangent.z = -radius * sinf(phi) * sinf(theta);
 
-			// v.TangentU = glm::normalize(v.TangentU);
+			v.tangent = glm::normalize(v.tangent);
 
 			v.normal = glm::normalize(v.position);
 
@@ -290,6 +291,7 @@ Mesh BasicGeometryGenerator::CreateTerrain(const unsigned char* heightValues,
 
 			vertex.normal = glm::vec3(0.0f, 1.0f, 0.0f);
 			vertex.texCoord = glm::vec2(0.0f, 0.0f);
+			vertex.tangent = glm::vec3(0.0f, 0.0f, 0.0f);
 
 			vertices.push_back(vertex);
 		}
@@ -335,6 +337,8 @@ Mesh BasicGeometryGenerator::CreateTerrainPatches(int width, int height, uint32_
 			vertex.texCoord.x = (i / static_cast<float>(countOfPatches));
 			vertex.texCoord.y = (j / static_cast<float>(countOfPatches));
 
+			vertex.tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+
 			vertices.push_back(vertex);
 		}
 	}
@@ -366,26 +370,26 @@ Mesh BasicGeometryGenerator::CreateQuad(float x, float y, float w, float h, floa
 	vertices[0] = Vertex(
 		x, y + h, depth,
 		0.0f, 0.0f, 1.0f,
-		// 1.0f, 0.0f, 0.0f,
-		0.0f, 1.0f);
+		0.0f, 1.0f,
+		1.0f, 0.0f, 0.0f);
 
 	vertices[1] = Vertex(
 		x, y, depth,
 		0.0f, 0.0f, 1.0f,
-		// 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f);
+		0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f);
 
 	vertices[2] = Vertex(
 		x + w, y, depth,
 		0.0f, 0.0f, 1.0f,
-		// 1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f);
+		1.0f, 0.0f,
+		1.0f, 0.0f, 0.0f);
 
 	vertices[3] = Vertex(
 		x + w, y + h, depth,
 		0.0f, 0.0f, 1.0f,
-		// 1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f);
+		1.0f, 1.0f,
+		1.0f, 0.0f, 0.0f);
 
 	indices[0] = 0;
 	indices[1] = 1;

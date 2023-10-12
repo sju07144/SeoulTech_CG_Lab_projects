@@ -12,12 +12,23 @@ struct Vertex
 		float u, float v)
 		: position(glm::vec3(px, py, pz)),
 		normal(glm::vec3(nx, ny, nz)),
-		texCoord(glm::vec2(u, v))
+		texCoord(glm::vec2(u, v)),
+		tangent(glm::vec3(0.0f))
+	{ }
+	Vertex(float px, float py, float pz,
+		float nx, float ny, float nz,
+		float u, float v,
+		float tx, float ty, float tz)
+		: position(glm::vec3(px, py, pz)),
+		normal(glm::vec3(nx, ny, nz)),
+		texCoord(glm::vec2(u, v)),
+		tangent(glm::vec3(tx, ty, tz))
 	{ }
 
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
+	glm::vec3 tangent;
 };
 
 struct PointLight
