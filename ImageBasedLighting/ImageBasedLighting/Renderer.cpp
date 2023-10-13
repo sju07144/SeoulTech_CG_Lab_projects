@@ -83,6 +83,10 @@ void Renderer::Initialize()
 	quad.ConfigureMesh();
 	mBasicMeshes.insert({ "quad", std::move(quad) });
 
+	auto grid = geoGenerator.CreateGrid(30.0f, 30.0f, 90, 90);
+	grid.ConfigureMesh();
+	mBasicMeshes.insert({ "grid", std::move(grid) });
+
 	// Load models
 	// model은 LoadModel 호출만으로 configuremesh, buildtexture 동시에 호출
 	mMiniModel.LoadModel(mModelDirectoryName + "Cerberus_by_Andrew_Maximov\\Cerberus_LP.fbx");
@@ -102,12 +106,23 @@ void Renderer::Initialize()
 	// Create Framebuffers.
 	BuildFramebuffers();
 
+	BuildShadowResources();
+
+	mImageBasedLight.SetDirectoryAndFileName(mShaderDirectoryName, mTextureDirectoryName + +"wooden_lounge_4k.hdr");
+	mImageBasedLight.BuildResources();
+
 	BuildRenderItems();
 }
 
 void Renderer::RenderLoop()
 {
-	DrawImageBasedLightRenderItems();
+	// DrawImageBasedLightRenderItems();
+	mImageBasedLight.Draw(
+		mProgramIDs["equirectangularToCube"],
+		mProgramIDs["irradianceMap"],
+		mProgramIDs["prefilterMap"],
+		mProgramIDs["brdf"]
+	);
 
 	while (!glfwWindowShouldClose(mWindow))
 	{
@@ -236,6 +251,10 @@ void Renderer::UpdateData()
 }
 void Renderer::DrawScene()
 {
+	int windowWidth, windowHeight;
+	glfwGetFramebufferSize(mWindow, &windowWidth, &windowHeight);
+	glViewport(0, 0, windowWidth, windowHeight);
+
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -307,30 +326,21 @@ void Renderer::BuildTextures()
 		mBasicTextures.insert({ texName + textureNames[i], std::move(rustediron2Texture) });
 	}
 
-	Texture equirectengularMap(mTextureDirectoryName + "wooden_lounge_4k.hdr");
-	texName = "equirectangularMap";
-	equirectengularMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false);
-	mBasicTextures.insert({ texName, std::move(equirectengularMap) });
+	directoryName = mTextureDirectoryName + "red-scifi-metal-bl\\";
+	textureNames = { "_albedo", "_metallic", "_normal-ogl", "_roughness" };
+	texName = "red-scifi-metal";
+	for (int i = 0; i < 4; i++)
+	{
+		std::string fileName(directoryName + texName + textureNames[i] + ".png");
+		Texture redScifiMetalTexture(fileName);
+		redScifiMetalTexture.CreateTexture2D(GL_REPEAT, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true);
+		mBasicTextures.insert({ texName + textureNames[i], std::move(redScifiMetalTexture) });
+	}
 
-	Texture cubeMap;
-	texName = "cubeMap";
-	cubeMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 512, 512);
-	mBasicTextures.insert({ texName, std::move(cubeMap) });
-
-	Texture irradianceMap;
-	texName = "irradianceMap";
-	irradianceMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 32, 32);
-	mBasicTextures.insert({ texName, std::move(irradianceMap) });
-
-	Texture prefilterMap;
-	texName = "prefilterMap";
-	prefilterMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true, true, 128, 128);
-	mBasicTextures.insert({ texName, std::move(prefilterMap) });
-
-	Texture brdfLUT;
-	texName = "brdfLUT";
-	brdfLUT.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 512, 512, GL_RG16F, GL_RG);
-	mBasicTextures.insert({ texName, std::move(brdfLUT) });
+	
+}
+void Renderer::BuildShadowResources()
+{
 }
 void Renderer::BuildMaterials()
 {
@@ -419,9 +429,7 @@ void Renderer::BuildShaders()
 
 void Renderer::BuildFramebuffers()
 {
-	Framebuffer captureFramebuffer;
-	captureFramebuffer.CreateFramebuffer(512, 512, 1, false);
-	mFramebuffers.insert({ "capture", std::move(captureFramebuffer) });
+	
 }
 
 void Renderer::InitializeSceneConstant()
@@ -433,7 +441,7 @@ void Renderer::InitializeSceneConstant()
 
 	mSceneConstant.ambientLight = glm::vec4{ 0.05f, 0.05f, 0.05f, 1.0f };
 	mSceneConstant.directionalLights[0].direction = glm::vec3{ -0.2f, -1.0f, -0.3f };
-	mSceneConstant.directionalLights[0].diffuse = glm::vec3{ 0.4f, 0.4f, 0.4f };
+	mSceneConstant.directionalLights[0].diffuse = glm::vec3{ 10.0f, 10.0f, 10.0f };
 	mSceneConstant.directionalLights[0].specular = glm::vec3{ 0.5f, 0.5f, 0.5f };
 
 	mSceneConstant.pointLights[0].position = glm::vec3(-10.0f, 10.0f, 10.0f);
@@ -466,15 +474,6 @@ void Renderer::UseProgram(uint32_t programID)
 
 void Renderer::BuildRenderItems()
 {
-	// Build image-based light render item.
-	mImageBasedLightRenderItem.mesh = &mBasicMeshes["box"];
-	mImageBasedLightRenderItem.world = glm::mat4(1.0f);
-	mImageBasedLightRenderItem.equirectangularMap = &mBasicTextures["equirectangularMap"];
-	mImageBasedLightRenderItem.environmentMap = &mBasicTextures["cubeMap"];
-	mImageBasedLightRenderItem.irradianceMap = &mBasicTextures["irradianceMap"];
-	mImageBasedLightRenderItem.prefilterMap = &mBasicTextures["prefilterMap"];
-	mImageBasedLightRenderItem.brdfLUT = &mBasicTextures["brdfLUT"];
-
 	RenderItem renderItem;
 
 	renderItem.mesh = &mBasicMeshes["box"];
@@ -507,9 +506,12 @@ void Renderer::BuildRenderItems()
 		for (auto& roughnessMap : modelComponent.roughnessMaps)
 			renderItem.roughnessMaps.push_back(&roughnessMap);
 
-		renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
-		renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
-		renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+		// renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
+		// renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
+		// renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+		renderItem.irradianceMap = mImageBasedLight.GetIrradianceMap();
+		renderItem.prefilterMap = mImageBasedLight.GetPreFilteredEnvironmentMap();
+		renderItem.brdfLUT = mImageBasedLight.GetBRDFLookUpTable();
 		mPBRRenderItems.push_back(renderItem);
 	}
 
@@ -534,19 +536,40 @@ void Renderer::BuildRenderItems()
 			renderItem.normalMaps.push_back(&mBasicTextures["rustediron2_normal"]);
 			renderItem.metallicMaps.push_back(&mBasicTextures["rustediron2_metallic"]);
 			renderItem.roughnessMaps.push_back(&mBasicTextures["rustediron2_roughness"]);
-			renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
-			renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
-			renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+			// renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
+			// renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
+			// renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+			renderItem.irradianceMap = mImageBasedLight.GetIrradianceMap();
+			renderItem.prefilterMap = mImageBasedLight.GetPreFilteredEnvironmentMap();
+			renderItem.brdfLUT = mImageBasedLight.GetBRDFLookUpTable();
 			mPBRRenderItems.push_back(std::move(renderItem));
 		}
 	}
+
+	world = glm::mat4(1.0f);
+	world = glm::translate(world, glm::vec3(0.0f, 0.0f, -15.0f));
+	renderItem.mesh = &mBasicMeshes["grid"];
+	renderItem.world = world;
+	renderItem.material = &mBasicMaterials["pbrSphere"];
+	renderItem.albedoMaps.push_back(&mBasicTextures["red-scifi-metal_albedo"]);
+	renderItem.normalMaps.push_back(&mBasicTextures["red-scifi-metal_normal-ogl"]);
+	renderItem.metallicMaps.push_back(&mBasicTextures["red-scifi-metal_metallic"]);
+	renderItem.roughnessMaps.push_back(&mBasicTextures["red-scifi-metal_roughness"]);
+	// renderItem.irradianceMap = &mBasicTextures["irradianceMap"];
+	// renderItem.prefilterMap = &mBasicTextures["prefilterMap"];
+	// renderItem.brdfLUT = &mBasicTextures["brdfLUT"];
+	renderItem.irradianceMap = mImageBasedLight.GetIrradianceMap();
+	renderItem.prefilterMap = mImageBasedLight.GetPreFilteredEnvironmentMap();
+	renderItem.brdfLUT = mImageBasedLight.GetBRDFLookUpTable();
+	mPBRRenderItems.push_back(std::move(renderItem));
 
 	mAllRenderItems.insert({ RenderLayer::PBR, mPBRRenderItems });
 
 	renderItem.mesh = &mBasicMeshes["box"];
 	world = glm::mat4(1.0f);
 	renderItem.world = world;
-	renderItem.environmentMap = &mBasicTextures["cubeMap"];
+	// renderItem.environmentMap = &mBasicTextures["cubeMap"];
+	renderItem.environmentMap = mImageBasedLight.GetCubeMap();
 	mEnvironmentRenderItems.push_back(std::move(renderItem));
 
 	mAllRenderItems.insert({ RenderLayer::Environment, mEnvironmentRenderItems });
@@ -693,150 +716,4 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 		glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
 		glBindVertexArray(0);
 	}
-}
-
-void Renderer::DrawImageBasedLightRenderItems()
-{
-	auto programID = mProgramIDs["equirectangularToCube"];
-
-	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-	glm::mat4 captureViews[] =
-	{
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
-		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
-	};
-
-	UseProgram(programID);
-
-	SetMat4(programID, "sceneConstant.projection", captureProjection);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, mImageBasedLightRenderItem.equirectangularMap->GetTexture());
-	SetInt(programID, "equirectangularMap", 0);
-
-	glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
-	glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffers["capture"].GetFramebuffer());
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		SetMat4(programID, "sceneConstant.view", captureViews[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mImageBasedLightRenderItem.environmentMap->GetTexture(), 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		auto primitiveType = mImageBasedLightRenderItem.mesh->GetPrimitiveType();
-		auto indexCount = mImageBasedLightRenderItem.mesh->GetIndexCount();
-		auto indexFormat = mImageBasedLightRenderItem.mesh->GetIndexFormat();
-		auto vertexAttribArray = mImageBasedLightRenderItem.mesh->GetVertexAttribArray();
-
-		glBindVertexArray(vertexAttribArray);
-		glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
-		glBindVertexArray(0);
-	}
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	programID = mProgramIDs["irradianceMap"];
-
-	UseProgram(programID);
-
-	SetMat4(programID, "sceneConstant.projection", captureProjection);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, mImageBasedLightRenderItem.environmentMap->GetTexture());
-	SetInt(programID, "environmentMap", 0);
-
-	glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
-	glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffers["capture"].GetFramebuffer());
-	mFramebuffers["capture"].ResizeDepthStencilBuffer(128, 128);
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		SetMat4(programID, "sceneConstant.view", captureViews[i]);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mImageBasedLightRenderItem.irradianceMap->GetTexture(), 0);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		auto primitiveType = mImageBasedLightRenderItem.mesh->GetPrimitiveType();
-		auto indexCount = mImageBasedLightRenderItem.mesh->GetIndexCount();
-		auto indexFormat = mImageBasedLightRenderItem.mesh->GetIndexFormat();
-		auto vertexAttribArray = mImageBasedLightRenderItem.mesh->GetVertexAttribArray();
-
-		glBindVertexArray(vertexAttribArray);
-		glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
-		glBindVertexArray(0);
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	programID = mProgramIDs["prefilterMap"];
-
-	UseProgram(programID);
-
-	SetMat4(programID, "sceneConstant.projection", captureProjection);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, mImageBasedLightRenderItem.environmentMap->GetTexture());
-	SetInt(programID, "environmentMap", 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffers["capture"].GetFramebuffer());
-	uint32_t maxMipLevels = 5;
-	for (unsigned int mip = 0; mip < maxMipLevels; mip++)
-	{
-		// resize framebuffer according to mip-level size.
-		uint32_t mipWidth = static_cast<uint32_t>(128 * std::pow(0.5, mip));
-		uint32_t mipHeight = static_cast<uint32_t>(128 * std::pow(0.5, mip));
-		mFramebuffers["capture"].ResizeDepthStencilBuffer(mipWidth, mipHeight);
-		glViewport(0, 0, mipWidth, mipHeight);
-
-		float roughness = static_cast<float>(mip) / static_cast<float>(maxMipLevels - 1);
-		SetFloat(programID, "roughness", roughness);
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			SetMat4(programID, "sceneConstant.view", captureViews[i]);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, mImageBasedLightRenderItem.prefilterMap->GetTexture(), mip);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			auto primitiveType = mImageBasedLightRenderItem.mesh->GetPrimitiveType();
-			auto indexCount = mImageBasedLightRenderItem.mesh->GetIndexCount();
-			auto indexFormat = mImageBasedLightRenderItem.mesh->GetIndexFormat();
-			auto vertexAttribArray = mImageBasedLightRenderItem.mesh->GetVertexAttribArray();
-
-			glBindVertexArray(vertexAttribArray);
-			glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
-			glBindVertexArray(0);
-		}
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	// then let OpenGL generate mipmaps from first mip face (combatting visible dots artifact)
-	glBindTexture(GL_TEXTURE_CUBE_MAP, mImageBasedLightRenderItem.environmentMap->GetTexture());
-	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
-
-	programID = mProgramIDs["brdf"];
-
-	UseProgram(programID);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffers["capture"].GetFramebuffer());
-	mFramebuffers["capture"].ResizeDepthStencilBuffer(512, 512);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mImageBasedLightRenderItem.brdfLUT->GetTexture(), 0);
-	glViewport(0, 0, 512, 512);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	Mesh* quad = &mBasicMeshes["quad"];
-	auto primitiveType = quad->GetPrimitiveType();
-	auto indexCount = quad->GetIndexCount();
-	auto indexFormat = quad->GetIndexFormat();
-	auto vertexAttribArray = quad->GetVertexAttribArray();
-
-	glBindVertexArray(vertexAttribArray);
-	glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
-	glBindVertexArray(0);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	int windowWidth, windowHeight;
-	glfwGetFramebufferSize(mWindow, &windowWidth, &windowHeight);
-	glViewport(0, 0, windowWidth, windowHeight);
 }

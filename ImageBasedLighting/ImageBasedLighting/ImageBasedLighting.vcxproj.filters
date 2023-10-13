@@ -75,6 +75,9 @@
     <ClInclude Include="..\..\cores\Utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\cores\ImageBasedLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\cores\BasicGeometryGenerator.cpp">
@@ -132,6 +135,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="imgui\imgui_widgets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\cores\ImageBasedLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -84,6 +84,33 @@ struct Material
 	float ao;
 };
 
+struct RenderItem
+{
+	glm::mat4 world = glm::mat4(1.0f);
+	Mesh* mesh = nullptr;
+	Material* material = nullptr;
+	bool isTexture = false;
+	std::vector<Texture*> albedoMaps;
+	std::vector<Texture*> specularMaps;
+	std::vector<Texture*> normalMaps;
+	std::vector<Texture*> metallicMaps;
+	std::vector<Texture*> roughnessMaps;
+
+	Texture* environmentMap = nullptr;
+	Texture* equirectangularMap = nullptr;
+	Texture* irradianceMap = nullptr;
+	Texture* prefilterMap = nullptr;
+	Texture* brdfLUT = nullptr;
+};
+
+struct Menu
+{
+	bool isUsingTexture = false;
+	bool isUsingNormalMap = false;
+	bool enableEnvironment = false;
+	bool enableImageBasedLighting = false;
+};
+
 void CheckCompileErrors(uint32_t id, std::string type);
 
 void SetBool(uint32_t programID, const std::string& name, bool value);

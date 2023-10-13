@@ -152,6 +152,7 @@
     <ClInclude Include="..\..\cores\BasicGeometryGenerator.h" />
     <ClInclude Include="..\..\cores\Camera.h" />
     <ClInclude Include="..\..\cores\Framebuffer.h" />
+    <ClInclude Include="..\..\cores\ImageBasedLight.h" />
     <ClInclude Include="..\..\cores\Mesh.h" />
     <ClInclude Include="..\..\cores\Model.h" />
     <ClInclude Include="..\..\cores\Renderbuffer.h" />
@@ -174,6 +175,7 @@
     <ClCompile Include="..\..\cores\BasicGeometryGenerator.cpp" />
     <ClCompile Include="..\..\cores\Camera.cpp" />
     <ClCompile Include="..\..\cores\Framebuffer.cpp" />
+    <ClCompile Include="..\..\cores\ImageBasedLight.cpp" />
     <ClCompile Include="..\..\cores\Mesh.cpp" />
     <ClCompile Include="..\..\cores\Model.cpp" />
     <ClCompile Include="..\..\cores\Renderbuffer.cpp" />

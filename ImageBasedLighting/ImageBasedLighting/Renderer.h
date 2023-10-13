@@ -2,6 +2,7 @@
 #include "../../cores/BasicGeometryGenerator.h"
 #include "../../cores/Camera.h"
 #include "../../cores/Framebuffer.h"
+#include "../../cores/ImageBasedLight.h"
 #include "../../cores/Mesh.h"
 #include "../../cores/Model.h"
 #include "../../cores/Shader.h"
@@ -38,34 +39,6 @@ struct SceneConstant
 	std::array<SpotLight, SpotLight::maxNumSpotLights> spotLights;
 };
 
-struct RenderItem
-{
-	glm::mat4 world = glm::mat4(1.0f);
-	Mesh* mesh = nullptr;
-	Material* material = nullptr;
-	bool isTexture = false;
-	std::vector<Texture*> albedoMaps;
-	std::vector<Texture*> specularMaps;
-	std::vector<Texture*> normalMaps;
-	std::vector<Texture*> metallicMaps;
-	std::vector<Texture*> roughnessMaps;
-
-	Texture* environmentMap = nullptr;
-	Texture* equirectangularMap = nullptr;
-	Texture* irradianceMap = nullptr;
-	Texture* prefilterMap = nullptr;
-	Texture* brdfLUT = nullptr;
-};
-
-struct Menu
-{
-	bool isUsingTexture = false;
-	bool isUsingNormalMap = false;
-	bool enableEnvironment = false;
-	bool enableImageBasedLighting = false;
-};
-
-
 void _FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void _MouseCallback(GLFWwindow* window, double xposIn, double yposIn);
 void _KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -98,6 +71,7 @@ private:
 	void UpdateSceneConstants();
 
 	void BuildTextures();
+	void BuildShadowResources(); // textures and framebuffers
 	void BuildMaterials();
 	void BuildShaders();
 	void BuildFramebuffers();
@@ -109,7 +83,6 @@ private:
 
 	void BuildRenderItems();
 	void DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool isEnvironmentMap = false);
-	void DrawImageBasedLightRenderItems();
 private:
 	// Window size variables.
 	uint32_t mWindowWidth;
@@ -148,12 +121,12 @@ private:
 	
 	std::unordered_map<RenderLayer, std::vector<RenderItem>> mAllRenderItems;
 
-	RenderItem mImageBasedLightRenderItem;
-
 	std::string mShaderDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\";
 	std::string mTextureDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\";
 	std::string mModelDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\models\\";
 	std::string mImageDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\images\\";
+
+	ImageBasedLight mImageBasedLight;
 
 	// mouse variables
 	float mLastMousePosX = 0.0f;
