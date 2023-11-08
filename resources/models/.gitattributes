@@ -1,0 +1,4 @@
+backpack/* filter=lfs diff=lfs merge=lfs -text
+Cerberus_by_Andrew_Maximov/* filter=lfs diff=lfs merge=lfs -text
+Cerberus_by_Andrew_Maximov/Textures/* filter=lfs diff=lfs merge=lfs -text
+Cerberus_by_Andrew_Maximov/Textures/Raw/* filter=lfs diff=lfs merge=lfs -text
