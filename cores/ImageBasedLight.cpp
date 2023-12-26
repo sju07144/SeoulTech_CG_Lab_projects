@@ -1,5 +1,10 @@
 #include "ImageBasedLight.h"
 
+const uint32_t ImageBasedLight::mCubeMapSize = 1024;
+const uint32_t ImageBasedLight::mIrradianceMapSize = 32;
+const uint32_t ImageBasedLight::mPrefilterMapSize = 128;
+const uint32_t ImageBasedLight::mBrdfLUTSize = 512;
+
 ImageBasedLight::ImageBasedLight(
 	const std::string& shaderDirectoryName, 
 	const std::string& equirectangularMapFileName)
@@ -22,6 +27,16 @@ void ImageBasedLight::BuildResources()
 	BuildFramebuffers();
 	BuildMatrices();
 	BuildRenderItems();
+}
+void ImageBasedLight::DeleteResources()
+{
+	mCaptureFramebuffer.DeleteFramebuffer();
+
+	for (auto& texture : mBasicTextures)
+		texture.second.DeleteTexture();
+
+	mBrdfLUTQuad.DeleteMesh();
+	mCubeMapBox.DeleteMesh();
 }
 
 void ImageBasedLight::Draw(uint32_t equiToCubeProgramID, uint32_t irradianceProgramID, uint32_t prefilterProgramID, uint32_t brdfLUTProgramID)
@@ -68,22 +83,22 @@ void ImageBasedLight::BuildTextures()
 
 	Texture cubeMap;
 	texName = "cubeMap";
-	cubeMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 512, 512);
+	cubeMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, mCubeMapSize, mCubeMapSize);
 	mBasicTextures.insert({ texName, std::move(cubeMap) });
 
 	Texture irradianceMap;
 	texName = "irradianceMap";
-	irradianceMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 32, 32);
+	irradianceMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, mIrradianceMapSize, mIrradianceMapSize);
 	mBasicTextures.insert({ texName, std::move(irradianceMap) });
 
 	Texture prefilterMap;
 	texName = "prefilterMap";
-	prefilterMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true, true, 128, 128);
+	prefilterMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, true, true, mPrefilterMapSize, mPrefilterMapSize);
 	mBasicTextures.insert({ texName, std::move(prefilterMap) });
 
 	Texture brdfLUT;
 	texName = "brdfLUT";
-	brdfLUT.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, 512, 512, GL_RG16F, GL_RG);
+	brdfLUT.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, mBrdfLUTSize, mBrdfLUTSize, GL_RG16F, GL_RG);
 	mBasicTextures.insert({ texName, std::move(brdfLUT) });
 }
 
@@ -127,8 +142,9 @@ void ImageBasedLight::DrawCubeMap(uint32_t programID)
 	glBindTexture(GL_TEXTURE_2D, mImageBasedLightRenderItem.equirectangularMap->GetTexture());
 	SetInt(programID, "equirectangularMap", 0);
 
-	glViewport(0, 0, 512, 512); // don't forget to configure the viewport to the capture dimensions.
+	glViewport(0, 0, mCubeMapSize, mCubeMapSize); // don't forget to configure the viewport to the capture dimensions.
 	glBindFramebuffer(GL_FRAMEBUFFER, mCaptureFramebuffer.GetFramebuffer());
+	mCaptureFramebuffer.ResizeDepthStencilBuffer(mCubeMapSize, mCubeMapSize);
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		SetMat4(programID, "sceneConstant.view", mCaptureViews[i]);
@@ -158,9 +174,9 @@ void ImageBasedLight::DrawIrradianceMap(uint32_t programID)
 	glBindTexture(GL_TEXTURE_CUBE_MAP, mImageBasedLightRenderItem.environmentMap->GetTexture());
 	SetInt(programID, "environmentMap", 0);
 
-	glViewport(0, 0, 32, 32); // don't forget to configure the viewport to the capture dimensions.
+	glViewport(0, 0, mIrradianceMapSize, mIrradianceMapSize); // don't forget to configure the viewport to the capture dimensions.
 	glBindFramebuffer(GL_FRAMEBUFFER, mCaptureFramebuffer.GetFramebuffer());
-	mCaptureFramebuffer.ResizeDepthStencilBuffer(128, 128);
+	mCaptureFramebuffer.ResizeDepthStencilBuffer(mIrradianceMapSize, mIrradianceMapSize);
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		SetMat4(programID, "sceneConstant.view", mCaptureViews[i]);
@@ -182,6 +198,8 @@ void ImageBasedLight::DrawIrradianceMap(uint32_t programID)
 
 void ImageBasedLight::DrawPreFilteredEnvironmentMap(uint32_t programID)
 {
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	
 	glUseProgram(programID);
 
 	SetMat4(programID, "sceneConstant.projection", mCaptureProjection);
@@ -195,8 +213,8 @@ void ImageBasedLight::DrawPreFilteredEnvironmentMap(uint32_t programID)
 	for (unsigned int mip = 0; mip < maxMipLevels; mip++)
 	{
 		// resize framebuffer according to mip-level size.
-		uint32_t mipWidth = static_cast<uint32_t>(128 * std::pow(0.5, mip));
-		uint32_t mipHeight = static_cast<uint32_t>(128 * std::pow(0.5, mip));
+		uint32_t mipWidth = static_cast<uint32_t>(mPrefilterMapSize * std::pow(0.5, mip));
+		uint32_t mipHeight = static_cast<uint32_t>(mPrefilterMapSize * std::pow(0.5, mip));
 		mCaptureFramebuffer.ResizeDepthStencilBuffer(mipWidth, mipHeight);
 		glViewport(0, 0, mipWidth, mipHeight);
 
@@ -231,9 +249,9 @@ void ImageBasedLight::DrawBRDFLookUpTable(uint32_t programID)
 	glUseProgram(programID);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, mCaptureFramebuffer.GetFramebuffer());
-	mCaptureFramebuffer.ResizeDepthStencilBuffer(512, 512);
+	mCaptureFramebuffer.ResizeDepthStencilBuffer(mBrdfLUTSize, mBrdfLUTSize);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mImageBasedLightRenderItem.brdfLUT->GetTexture(), 0);
-	glViewport(0, 0, 512, 512);
+	glViewport(0, 0, mBrdfLUTSize, mBrdfLUTSize);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	Mesh* quad = &mBrdfLUTQuad;

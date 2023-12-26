@@ -25,6 +25,7 @@ public:
 	);
 
 	void BuildResources();
+	void DeleteResources();
 
 	void Draw(uint32_t equiToCubeProgramID, uint32_t irradianceProgramID, uint32_t prefilterProgramID, uint32_t brdfLUTProgramID);
 
@@ -59,4 +60,9 @@ private:
 
 	glm::mat4 mCaptureProjection;
 	std::array<glm::mat4, 6> mCaptureViews;
+
+	static const uint32_t mCubeMapSize;
+	static const uint32_t mIrradianceMapSize;
+	static const uint32_t mPrefilterMapSize;
+	static const uint32_t mBrdfLUTSize;
 };

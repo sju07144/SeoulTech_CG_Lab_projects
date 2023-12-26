@@ -13,10 +13,13 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <cctype>
 #include <codecvt>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <locale>
@@ -25,5 +28,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>

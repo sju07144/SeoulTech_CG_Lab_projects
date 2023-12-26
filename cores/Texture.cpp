@@ -122,7 +122,7 @@ void Texture::CreateHDRTexture2D(GLenum wrapSType, GLenum wrapTType,
 			else if (_nrChannels == 4)
 			{
 				internalFormat = GL_RGBA16F;
-				format = GL_RGB16F;
+				format = GL_RGBA;
 			}
 
 			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, _width, _height, 0, format, GL_FLOAT, data);
@@ -251,6 +251,11 @@ void Texture::CreateTexture2D(const TextureInfo& textureSetup)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureSetup.minFilterType);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureSetup.magFilterType);
 
+
+	// Set border color if enabled.
+	if (textureSetup.isBorderColor)
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, textureSetup.borderColor.data());
+
 	if (textureSetup.nullData)
 	{
 		glTexImage2D(GL_TEXTURE_2D, 0, textureSetup.textureFormat, textureSetup.width, textureSetup.height, 
@@ -298,6 +303,10 @@ void Texture::CreateHDRTexture2D(const TextureInfo& textureSetup)
 	// Set texture filtering parameters.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, textureSetup.minFilterType);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, textureSetup.magFilterType);
+
+	// Set border color if enabled.
+	if (textureSetup.isBorderColor)
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, textureSetup.borderColor.data());
 
 	if (textureSetup.nullData)
 	{
@@ -354,6 +363,10 @@ void Texture::CreateTextureCube(const TextureInfo& textureSetup)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, textureSetup.wrapTType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, textureSetup.wrapRType);
 
+	// Set border color if enabled.
+	if (textureSetup.isBorderColor)
+		glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, textureSetup.borderColor.data());
+
 	if (textureSetup.nullData)
 	{
 		for (uint32_t i = 0; i < 6; i++)
@@ -402,6 +415,10 @@ void Texture::CreateHDRTextureCube(const TextureInfo& textureSetup)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, textureSetup.wrapSType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, textureSetup.wrapTType);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, textureSetup.wrapRType);
+
+	// Set border color if enabled.
+	if (textureSetup.isBorderColor)
+		glTexParameterfv(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BORDER_COLOR, textureSetup.borderColor.data());
 
 	if (textureSetup.nullData)
 	{

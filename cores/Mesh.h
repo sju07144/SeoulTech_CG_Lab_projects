@@ -9,7 +9,7 @@ public:
 	Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices,
 		GLenum primitiveType = GL_TRIANGLES);
 
-	void ConfigureMesh(GLenum usage = GL_STATIC_DRAW);
+	void ConfigureMesh(GLenum usage = GL_STATIC_DRAW, bool isBoundingBox = false);
 	void DeleteMesh();
 
 	uint32_t GetVertexAttribArray();
@@ -21,6 +21,10 @@ public:
 	GLenum GetPrimitiveType();
 	GLenum GetIndexFormat();
 
+	glm::vec3 GetBoundingBoxCenter();
+	double GetDiagnalLength();
+private:
+	void CalculateBoundingBoxCenter();
 private:
 	std::vector<Vertex> mVertices;
 	UINT vertexByteSize = 0;
@@ -35,4 +39,9 @@ private:
 
 	uint32_t mVertexBuffer = 0;
 	uint32_t mIndexBuffer = 0;
+
+	std::vector<glm::vec3> mBoundingBoxVertices;
+	std::array<uint32_t, 36> mBoundingBoxIndices;
+	glm::vec3 mBoundingBoxCenter = glm::vec3(0.0f, 0.0f, 0.0f);
+	double mDiagnalLength = 0.0;
 };

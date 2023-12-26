@@ -201,6 +201,7 @@
     <None Include="..\..\resources\shaders\cubemapHDR.frag" />
     <None Include="..\..\resources\shaders\cubemapHDR.vert" />
     <None Include="..\..\resources\shaders\equirectangularToCube.frag" />
+    <None Include="..\..\resources\shaders\equirectangularToCube.vert" />
     <None Include="..\..\resources\shaders\gBuffer.frag" />
     <None Include="..\..\resources\shaders\gBuffer.vert" />
     <None Include="..\..\resources\shaders\irradianceMap.frag" />

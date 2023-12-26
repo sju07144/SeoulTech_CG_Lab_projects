@@ -18,6 +18,8 @@ struct DirectionalLight
 	vec3 specular;
 
 	vec3 direction;
+
+	mat4 lightSpaceMatrix;
 };
 
 struct SpotLight
@@ -48,6 +50,8 @@ struct SceneConstant
 	DirectionalLight directionalLights[4];
 	PointLight pointLights[4];
 	SpotLight spotLights[4];
+
+	float farPlane;
 };
 
 struct Material
@@ -68,9 +72,11 @@ struct VS_OUT
 	vec2 texCoords;
 
 	mat3 TBN;
+
+	vec4 lightSpacePos[4];
 };
 
-#define NUM_DIRECTIONAL_LIGHTS 0
+#define NUM_DIRECTIONAL_LIGHTS 1
 #define NUM_POINT_LIGHTS 4
 #define NUM_SPOT_LIGHTS 0
 
@@ -81,6 +87,7 @@ out vec4 color;
 uniform bool isUsingTexture;
 uniform bool isUsingNormalMap;
 uniform bool enableImageBasedLighting;
+uniform bool enableShadow;
 
 uniform Material material;
 uniform sampler2D albedoMap0;
@@ -91,6 +98,9 @@ uniform sampler2D roughnessMap0;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
+
+uniform sampler2D shadowMaps[4];
+uniform samplerCube shadowCubeMaps[4];
 
 uniform SceneConstant sceneConstant;
 
@@ -110,10 +120,10 @@ vec3 BlinnPhong(vec3 ambient, vec3 diffuse, vec3 specular,
 vec3 CookTorrance(vec3 lightDir, vec3 radiance,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal);
-vec3 CalculateDirectionalLight(DirectionalLight light, 
+vec3 CalculateDirectionalLight(DirectionalLight light, vec4 lightSpacePos, sampler2D shadowMap,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal);
-vec3 CalculatePointLight(PointLight light,
+vec3 CalculatePointLight(PointLight light, samplerCube shadowCubeMap,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal);
 vec3 CalculateSpotLight(SpotLight light,
@@ -122,6 +132,9 @@ vec3 CalculateSpotLight(SpotLight light,
 
 vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal, vec3 viewReflection);
+
+float CalculateShadow(vec4 lightSpacePos, vec3 normal, vec3 lightDir, sampler2D shadowMap);
+float CalculatePointShadow(vec3 worldPos, vec3 viewPos, vec3 lightPos, samplerCube shadowCubeMap);
 
 void main()
 {
@@ -154,6 +167,7 @@ void main()
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++)
 	{
 		pointLightColor += CalculatePointLight(sceneConstant.pointLights[i],
+			shadowCubeMaps[i],
 			albedo, metallic, roughness, ao, F0,
 			V, N);
 	}
@@ -163,6 +177,7 @@ void main()
 	for (int i = 0; i < NUM_DIRECTIONAL_LIGHTS; i++)
 	{
 		directionalLightColor += CalculateDirectionalLight(sceneConstant.directionalLights[i],
+			vs_out.lightSpacePos[i], shadowMaps[0],
 			albedo, metallic, roughness, ao, F0,
 			V, N);
 	}
@@ -295,7 +310,7 @@ vec3 CookTorrance(vec3 lightDir, vec3 radiance,
 	return (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 }
 
-vec3 CalculatePointLight(PointLight light,
+vec3 CalculatePointLight(PointLight light, samplerCube shadowCubeMap,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal)
 {
@@ -305,12 +320,19 @@ vec3 CalculatePointLight(PointLight light,
 	float attenuation = 1.0f / (distance * distance);
 	vec3 radiance = light.diffuse * attenuation;
 
-	return CookTorrance(lightDir, radiance,
+	// calculate shadow.
+	float shadow = 0.0f;
+	// if (enableShadow)
+	// 	shadow = CalculatePointShadow(vs_out.worldPos, sceneConstant.cameraPos, light.position, shadowCubeMap);
+	// else
+	// 	shadow = 0.0f;
+
+	return (1.0f - shadow) * CookTorrance(lightDir, radiance,
 		albedo, metallic, roughness, ao, F0,
 		viewDir, normal);
 }
 
-vec3 CalculateDirectionalLight(DirectionalLight light, 
+vec3 CalculateDirectionalLight(DirectionalLight light, vec4 lightSpacePos, sampler2D shadowMap,
 	vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
 	vec3 viewDir, vec3 normal)
 {
@@ -318,7 +340,14 @@ vec3 CalculateDirectionalLight(DirectionalLight light,
 
 	vec3 radiance = light.diffuse;
 
-	return CookTorrance(lightDir, radiance,
+	// calculate shadow.
+	float shadow = 0.0f;
+	if (enableShadow)
+		shadow = CalculateShadow(lightSpacePos, normal, lightDir, shadowMap);
+	else
+		shadow = 0.0f;
+
+	return (1.0f - shadow) * CookTorrance(lightDir, radiance,
 		albedo, metallic, roughness, ao, F0,
 		viewDir, normal);
 }
@@ -362,4 +391,73 @@ vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, floa
 	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 	
 	return (kD * diffuse + specular) * ao;
+}
+
+float CalculateShadow(vec4 lightSpacePos, vec3 normal, vec3 lightDir, sampler2D shadowMap)
+{
+	float shadow = 0.0;
+    // perform perspective divide
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+	if (projCoords.z > 1.0)
+	{
+		shadow = 0.0;
+		return shadow;
+	}
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(shadowMap, projCoords.xy).r; 
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+
+	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005); 
+
+	// check whether current frag pos is in shadow
+	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+	for(int x = -1; x <= 1; ++x)
+	{
+	    for(int y = -1; y <= 1; ++y)
+	    {
+	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
+	    }    
+	}
+	shadow /= 9.0;
+
+    return shadow;
+}
+
+float CalculatePointShadow(vec3 worldPos, vec3 viewPos, vec3 lightPos, samplerCube shadowCubeMap)
+{
+	vec3 sampleOffsetDirections[20] = vec3[]
+	(
+	   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+	   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+	   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+	   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+	   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+	);  
+
+	float shadow = 0.0;
+    // get vector between world position to light position
+	vec3 worldToLight = worldPos - lightPos;
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(worldToLight);
+
+	float bias = 0.15;
+	int samples = 20;
+	float viewDistance = length(viewPos - worldPos);
+	float diskRadius = (1.0 + (viewDistance / sceneConstant.farPlane)) / 25.0;  
+	for(int i = 0; i < samples; ++i)
+	{
+		// use the light to fragment vector to sample from the depth map    
+	    float closestDepth = texture(shadowCubeMap, worldToLight + sampleOffsetDirections[i] * diskRadius).r;
+		// it is currently in linear range between [0,1]. Re-transform back to original value
+	    closestDepth *= sceneConstant.farPlane;   // undo mapping [0;1]
+	    if(currentDepth - bias > closestDepth)
+	        shadow += 1.0;
+	}
+	shadow /= float(samples); 
+
+    return shadow;
 }

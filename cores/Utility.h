@@ -31,20 +31,6 @@ struct Vertex
 	glm::vec3 tangent;
 };
 
-struct PointLight
-{
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-
-	glm::vec3 position;
-
-	float constant;
-	float linear;
-	float quadratic;
-
-	static constexpr int maxNumPointLights = 4;
-};
-
 struct DirectionalLight
 {
 	glm::vec3 diffuse;
@@ -52,7 +38,25 @@ struct DirectionalLight
 
 	glm::vec3 direction;
 
+	glm::mat4 lightSpaceMatrix; // for shadow
+
 	static constexpr int maxNumDirectionalLights = 4;
+};
+
+struct PointLight
+{
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+
+	glm::vec3 position;
+
+	std::array<glm::mat4, 6> lightSpaceMatrices; // for shadow
+
+	float constant;
+	float linear;
+	float quadratic;
+
+	static constexpr int maxNumPointLights = 4;
 };
 
 struct SpotLight
@@ -62,6 +66,8 @@ struct SpotLight
 
 	glm::vec3 direction;
 	glm::vec3 position;
+
+	std::array<glm::mat4, 6> lightSpaceMatrices; // for shadow
 
 	float constant;
 	float linear;
@@ -95,8 +101,15 @@ struct RenderItem
 	std::vector<Texture*> normalMaps;
 	std::vector<Texture*> metallicMaps;
 	std::vector<Texture*> roughnessMaps;
+	std::vector<Texture*> metallicRoughnessMaps;
+	std::vector<Texture*> aoMaps;
+	std::vector<Texture*> maskMaps;
 
 	Texture* environmentMap = nullptr;
+
+	std::vector<Texture*> shadowMaps;
+	std::vector<Texture*> shadowCubeMaps;
+
 	Texture* equirectangularMap = nullptr;
 	Texture* irradianceMap = nullptr;
 	Texture* prefilterMap = nullptr;
@@ -109,6 +122,7 @@ struct Menu
 	bool isUsingNormalMap = false;
 	bool enableEnvironment = false;
 	bool enableImageBasedLighting = false;
+	bool enableShadow = false;
 };
 
 void CheckCompileErrors(uint32_t id, std::string type);

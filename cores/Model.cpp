@@ -7,6 +7,8 @@ Model::Model(const std::string& path)
 
 void Model::LoadModel(const std::string& path)
 {
+	std::filesystem::path modelPath(path);
+	mDirectoryName = modelPath.parent_path().string();
 	ParseDirectoryName(path);
 
 	Assimp::Importer importer;

@@ -5,6 +5,7 @@ uint32_t Framebuffer::GetFramebuffer()
 	return mFramebuffer;
 }
 
+// If you doesn't use render buffer, you must create depth stencil texture by yourself and attach to the framebuffer.
 void Framebuffer::CreateFramebuffer(uint32_t width, uint32_t height, 
 	uint32_t colorAttachmentCount, bool isDefaultTexture2D,
 	bool isDepthAttachment, bool isStencilAttachment)
@@ -24,8 +25,7 @@ void Framebuffer::CreateFramebuffer(uint32_t width, uint32_t height,
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, mColorTextures[i].GetTexture(), 0);
 		}
 	}
-		
-
+	
 	mDepthStencilBuffer.CreateRenderbuffer(width, height, isStencilAttachment);
 
 	// Check whether stencil buffer uses.

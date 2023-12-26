@@ -38,7 +38,8 @@ Renderer::Renderer()
 }
 Renderer::~Renderer()
 {
-	mImageBasedLight.DeleteResources();
+	for (auto& imageBasedLight: mImageBasedLights)
+		imageBasedLight.DeleteResources();
 
 	for (auto& framebuffer : mFramebuffers)
 		framebuffer.second.DeleteFramebuffer();
@@ -119,9 +120,6 @@ void Renderer::Initialize()
 	// for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.pointLightCount; lightIndex++)
 	// 	BuildPointShadowResources(lightIndex);
 
-	mImageBasedLight.SetDirectoryAndFileName(mShaderDirectoryName, mTextureDirectoryName + "wooden_lounge_4k.hdr");
-	mImageBasedLight.BuildResources();
-
 	BuildImageBasedLightsAndDraw();
 
 	BuildRenderItems();
@@ -171,7 +169,7 @@ void Renderer::RenderLoop()
 			quadRenderItem.irradianceMap = currentImageBasedLight.GetIrradianceMap();
 			quadRenderItem.prefilterMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
 			quadRenderItem.brdfLUT = currentImageBasedLight.GetBRDFLookUpTable();
-			environmentRenderItem.environmentMap = currentImageBasedLight.GetCubeMap();
+			environmentRenderItem.environmentMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
 
 			mPhi += mDegreeDelta;
 			if (mPhi == 360)
@@ -190,7 +188,7 @@ void Renderer::RenderLoop()
 			}
 			mCurrentCameraPosition = glm::vec3(
 				mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::cos(glm::radians(static_cast<float>(mPhi))),
-				mRadius * glm::sin(glm::radians(static_cast<float>(mTheta - 90))),										   	 
+				mRadius * glm::sin(glm::radians(static_cast<float>(mTheta - 90))),
 				mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::sin(glm::radians(static_cast<float>(mPhi)))
 			);
 		}
@@ -329,13 +327,14 @@ void Renderer::DrawScene()
 	glfwGetFramebufferSize(mWindow, &windowWidth, &windowHeight);
 	glViewport(0, 0, windowWidth, windowHeight);
 
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_MULTISAMPLE);
 
 	DrawRenderItems(RenderLayer::PBR_Deferred, mProgramIDs["pbr_deferred"]);
 	DrawRenderItems(RenderLayer::Environment, mProgramIDs["cubeMapHDR"], mMenu.enableEnvironment);
@@ -373,6 +372,7 @@ void Renderer::UpdateSceneConstants()
 	mSceneConstant.projection = mCamera.GetProjection();
 	
 	mSceneConstant.cameraPos = mCurrentCameraPosition;
+	mSceneConstant.cameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
 }
 
 void Renderer::BuildTextures()
@@ -461,9 +461,11 @@ void Renderer::BuildShaders()
 	shaderIDs.clear();
 
 	//image-based light shader (from equiToCube to brdf)
+	Shader equirectangularToCubeVertexShader;
 	Shader equirectangularToCubeFragmentShader;
+	equirectangularToCubeVertexShader.CompileShader(mShaderDirectoryName + "equirectangularToCube.vert", GL_VERTEX_SHADER);
 	equirectangularToCubeFragmentShader.CompileShader(mShaderDirectoryName + "equirectangularToCube.frag", GL_FRAGMENT_SHADER);
-	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(equirectangularToCubeVertexShader.GetShaderID());
 	shaderIDs.push_back(equirectangularToCubeFragmentShader.GetShaderID());
 	LinkPrograms("equirectangularToCube", shaderIDs);
 	shaderIDs.clear();
@@ -471,14 +473,14 @@ void Renderer::BuildShaders()
 	Shader irradianceMapFragmentShader;
 	std::vector<uint32_t> irradianceMapShaderIDs;
 	irradianceMapFragmentShader.CompileShader(mShaderDirectoryName + "irradianceMap.frag", GL_FRAGMENT_SHADER);
-	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(equirectangularToCubeVertexShader.GetShaderID());
 	shaderIDs.push_back(irradianceMapFragmentShader.GetShaderID());
 	LinkPrograms("irradianceMap", shaderIDs);
 	shaderIDs.clear();
 
 	Shader prefilterMapFragmentShader;
 	prefilterMapFragmentShader.CompileShader(mShaderDirectoryName + "prefilterMap.frag", GL_FRAGMENT_SHADER);
-	shaderIDs.push_back(cubeMapVertexShader.GetShaderID());
+	shaderIDs.push_back(equirectangularToCubeVertexShader.GetShaderID());
 	shaderIDs.push_back(prefilterMapFragmentShader.GetShaderID());
 	LinkPrograms("prefilterMap", shaderIDs);
 	shaderIDs.clear();
@@ -542,10 +544,20 @@ void Renderer::BuildG_Buffers()
 		false, true, mWindowWidth, mWindowHeight, GL_RGB);
 	mG_Buffer.insert({ "roughnessMap", std::move(roughnessMap) });
 
+	Texture metallicRoughnessMap;
+	metallicRoughnessMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	mG_Buffer.insert({ "metallicRoughnessMap", std::move(metallicRoughnessMap) });
+
 	Texture aoMap;
 	aoMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
 		false, true, mWindowWidth, mWindowHeight, GL_RGB);
 	mG_Buffer.insert({ "aoMap", std::move(aoMap) });
+
+	Texture maskMap;
+	maskMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	mG_Buffer.insert({ "maskMap", std::move(maskMap) });
 }
 
 void Renderer::LoadG_Buffers(const std::string& directoryName, uint32_t degree0, uint32_t degree1)
@@ -554,7 +566,9 @@ void Renderer::LoadG_Buffers(const std::string& directoryName, uint32_t degree0,
 	LoadTexture("normal", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("metallic", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("roughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("metallicRoughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("ao", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("mask", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 }
 void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, uint32_t degree0, uint32_t degree1)
 {
@@ -565,9 +579,12 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 
 	glBindTexture(GL_TEXTURE_2D, mG_Buffer[textureName + "Map"].GetTexture());
 
-	textureName[0] = std::toupper(textureName[0]);
 	if (textureName == "ao")
-		textureName[1] = std::toupper(textureName[1]);
+		textureName = "AO";
+	else if (textureName == "metallicRoughness")
+		textureName = "Metallic-Roughness";
+	else
+		textureName[0] = std::toupper(textureName[0]);
 
 	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(degree0) + "_" + std::to_string(degree1) + ".png";
 
@@ -671,7 +688,9 @@ void Renderer::InitializeSceneConstant()
 
 	// mSceneConstant.cameraPos = mCamera.GetPosition();
 	mSceneConstant.cameraPos = mCurrentCameraPosition;
+	mSceneConstant.cameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
 
+	/*
 	mSceneConstant.ambientLight = glm::vec4{ 0.05f, 0.05f, 0.05f, 1.0f };
 	mSceneConstant.directionalLights[0].direction = glm::vec3{ 0.0f, -1.0f, -1.0f };
 	mSceneConstant.directionalLights[0].diffuse = glm::vec3{ 10.0f, 10.0f, 10.0f };
@@ -709,6 +728,7 @@ void Renderer::InitializeSceneConstant()
 		pointLight.lightSpaceMatrices[5] = shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
 		pointLight.diffuse = glm::vec3(300.0f, 300.0f, 300.0f);
 	}
+	*/
 }
 
 void Renderer::LinkPrograms(const std::string& shaderName, const std::vector<uint32_t>& shaderIDs)
@@ -736,13 +756,19 @@ void Renderer::BuildRenderItems()
 	glm::mat4 world(1.0f);
 
 	renderItem.mesh = &mBasicMeshes["quad"];
-	renderItem.world = world;
+	float scalingSize = static_cast<float>(1.0 / renderItem.mesh->GetDiagnalLength());
+	glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
+	glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), renderItem.mesh->GetBoundingBoxCenter());
+	glm::mat4 normalizeMatrix = scalingMatrix * translateMatrix;
+	renderItem.world = normalizeMatrix;
 	renderItem.material = &mBasicMaterials["pbrSphere"];
 	renderItem.albedoMaps.push_back(&mG_Buffer["albedoMap"]);
 	renderItem.normalMaps.push_back(&mG_Buffer["normalMap"]);
 	renderItem.metallicMaps.push_back(&mG_Buffer["metallicMap"]);
 	renderItem.roughnessMaps.push_back(&mG_Buffer["roughnessMap"]);
+	renderItem.metallicRoughnessMaps.push_back(&mG_Buffer["metallicRoughnessMap"]);
 	renderItem.aoMaps.push_back(&mG_Buffer["aoMap"]);
+	renderItem.maskMaps.push_back(&mG_Buffer["maskMap"]);
 	renderItem.irradianceMap = mImageBasedLights[0].GetIrradianceMap();
 	renderItem.prefilterMap = mImageBasedLights[0].GetPreFilteredEnvironmentMap();
 	renderItem.brdfLUT = mImageBasedLights[0].GetBRDFLookUpTable();
@@ -760,7 +786,7 @@ void Renderer::BuildRenderItems()
 	renderItem.mesh = &mBasicMeshes["box"];
 	world = glm::mat4(1.0f);
 	renderItem.world = world;
-	renderItem.environmentMap = mImageBasedLights[0].GetCubeMap();
+	renderItem.environmentMap = mImageBasedLights[0].GetPreFilteredEnvironmentMap();
 	mEnvironmentRenderItems.push_back(std::move(renderItem));
 
 	mAllRenderItems.insert({ RenderLayer::Environment, mEnvironmentRenderItems });
@@ -808,9 +834,11 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 	SetMat4(programID, "sceneConstant.view", mSceneConstant.view);
 	SetMat4(programID, "sceneConstant.projection", mSceneConstant.projection);
 	SetVec3(programID, "sceneConstant.cameraPos", mSceneConstant.cameraPos);
+	SetVec3(programID, "sceneConstant.cameraFront", mSceneConstant.cameraFront);
 	
 	SetVec4(programID, "sceneConstant.ambientLight", mSceneConstant.ambientLight);
 
+	/*
 	SetVec3(programID, "sceneConstant.directionalLights[0].direction", mSceneConstant.directionalLights[0].direction);
 	SetVec3(programID, "sceneConstant.directionalLights[0].diffuse", mSceneConstant.directionalLights[0].diffuse);
 	SetVec3(programID, "sceneConstant.directionalLights[0].specular", mSceneConstant.directionalLights[0].specular);
@@ -824,6 +852,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 	}
 
 	SetFloat(programID, "sceneConstant.farPlane", mSceneConstant.farPlaneForPointShadow);
+	*/
 
 	for (auto renderItem : renderItems)
 	{
@@ -886,6 +915,16 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 			i++;
 		}
 
+		const auto& metallicRoughnessMaps = renderItem.metallicRoughnessMaps;
+		uint32_t metallicRoughnessMapCount = 0;
+		for (auto metallicRoughnessMap : metallicRoughnessMaps)
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap->GetTexture());
+			SetInt(programID, "metallicRoughnessMap" + std::to_string(metallicRoughnessMapCount++), i);
+			i++;
+		}
+
 		const auto& aoMaps = renderItem.aoMaps;
 		uint32_t aoMapCount = 0;
 		for (auto aoMap : aoMaps)
@@ -893,6 +932,16 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, aoMap->GetTexture());
 			SetInt(programID, "aoMap" + std::to_string(aoMapCount++), i);
+			i++;
+		}
+
+		const auto& maskMaps = renderItem.maskMaps;
+		uint32_t maskMapCount = 0;
+		for (auto maskMap : maskMaps)
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, maskMap->GetTexture());
+			SetInt(programID, "maskMap" + std::to_string(maskMapCount++), i);
 			i++;
 		}
 

@@ -32,17 +32,18 @@ struct SceneConstant
 	glm::mat4 projection;
 
 	glm::vec3 cameraPos;
+	glm::vec3 cameraFront;
 	float pad0;
 
 	glm::vec4 ambientLight;
 
 	std::array<DirectionalLight, DirectionalLight::maxNumDirectionalLights> directionalLights;
 	std::array<Texture, DirectionalLight::maxNumDirectionalLights> shadowMaps;
-	const uint32_t directionalLightCount = 1;
+	const uint32_t directionalLightCount = 0;
 
 	std::array<PointLight, PointLight::maxNumPointLights> pointLights;
 	std::array<Texture, PointLight::maxNumPointLights> pointShadowCubeMaps;
-	const uint32_t pointLightCount = 4;
+	const uint32_t pointLightCount = 0;
 	float farPlaneForPointShadow;
 
 	std::array<SpotLight, SpotLight::maxNumSpotLights> spotLights;
@@ -147,15 +148,14 @@ private:
 	
 	std::unordered_map<RenderLayer, std::vector<RenderItem>> mAllRenderItems;
 
-	std::string mShaderDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\";
-	std::string mTextureDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\textures\\";
-	std::string mModelDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\models\\";
-	std::string mImageDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\images\\";
+	std::string mShaderDirectoryName = "..\\..\\resources\\shaders\\";
+	std::string mTextureDirectoryName = "..\\..\\resources\\textures\\";
+	std::string mModelDirectoryName = "..\\..\\resources\\models\\";
+	std::string mImageDirectoryName = "..\\..\\resources\\images\\";
 
-	std::string mDatasetDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\IBL_rendered_examples";
+	std::string mDatasetDirectoryName = "..\\..\\resources\\IBL_rendered_examples";
 	std::vector<std::string> mModelDirectoryNames;
 
-	ImageBasedLight mImageBasedLight;
 	static constexpr uint32_t mNumImageBasedLights = 6;
 	std::array<ImageBasedLight, mNumImageBasedLights> mImageBasedLights;
 	

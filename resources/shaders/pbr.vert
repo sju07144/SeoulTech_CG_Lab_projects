@@ -22,6 +22,8 @@ struct DirectionalLight
 	vec3 specular;
 
 	vec3 direction;
+
+	mat4 lightSpaceMatrix;
 };
 
 struct SpotLight
@@ -52,6 +54,8 @@ struct SceneConstant
 	DirectionalLight directionalLights[4];
 	PointLight pointLights[4];
 	SpotLight spotLights[4];
+
+	float farPlane;
 };
 
 uniform mat4 world;
@@ -64,6 +68,8 @@ struct VS_OUT
 	vec2 texCoords;
 
 	mat3 TBN;
+
+	vec4 lightSpacePos[4];
 };
 
 out VS_OUT vs_out;
@@ -85,4 +91,7 @@ void main()
 	vec3 B = cross(N, T);
 	
 	vs_out.TBN = mat3(T, B, N);
+
+	for (int i = 0; i < 4; i++)
+		vs_out.lightSpacePos[i] = sceneConstant.directionalLights[i].lightSpaceMatrix * vec4(vs_out.worldPos, 1.0);
 }

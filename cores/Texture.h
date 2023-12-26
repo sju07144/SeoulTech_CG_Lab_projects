@@ -27,6 +27,10 @@ struct TextureInfo
 
 	// is HDR;
 	bool isHDR = false;
+
+	// is border color
+	bool isBorderColor = false;
+	std::array<float, 4> borderColor;
 };
 
 class Texture

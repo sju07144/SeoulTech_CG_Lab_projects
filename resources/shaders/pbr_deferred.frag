@@ -44,7 +44,9 @@ struct SceneConstant
 	mat4 projection;
 
 	vec3 cameraPos;
+	vec3 cameraFront;
 	float pad0;
+	float pad1;
 
 	vec4 ambientLight;
 	DirectionalLight directionalLights[4];
@@ -91,7 +93,9 @@ uniform sampler2D albedoMap0;
 uniform sampler2D normalMap0;
 uniform sampler2D metallicMap0;
 uniform sampler2D roughnessMap0;
+uniform sampler2D metallicRoughnessMap0;
 uniform sampler2D aoMap0;
+uniform sampler2D maskMap0;
 
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
@@ -135,15 +139,15 @@ float CalculatePointShadow(vec3 worldPos, vec3 viewPos, vec3 lightPos, samplerCu
 void main()
 {
 	vec3 albedo = texture(albedoMap0, vs_out.texCoords).rgb;
+	float alphaChannel = texture(albedoMap0, vs_out.texCoords).a;
 	float metallic = texture(metallicMap0, vs_out.texCoords).r;
 	float roughness = texture(roughnessMap0, vs_out.texCoords).r;
 	float ao = texture(aoMap0, vs_out.texCoords).r;
+	float mask = texture(maskMap0, vs_out.texCoords).r;
 
-	vec3 N = texture(normalMap0, vs_out.texCoords).rgb;
-	N = 2.0f * N - 1.0f;
-	N = normalize(N);
+	vec3 N = normalize(2.0f * texture(normalMap0, vs_out.texCoords).rgb - 1.0f);
 
-	vec3 V = normalize(sceneConstant.cameraPos - vs_out.worldPos);
+	vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3f - vs_out.worldPos);
 	vec3 R = reflect(-V, N);
 
 	// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
@@ -189,20 +193,17 @@ void main()
 	
 	vec3 result = ambient + pointLightColor + directionalLightColor + spotLightColor;
 
-	// HDR tonemapping
-	result = result / (result + vec3(1.0f));
-	// gamma correct
-	result = pow(result, vec3(1.0f / 2.2f));
+	// First, initialize background color. Then, Check whether image-based light can be enabled or not.
+	color = vec4(albedo, alphaChannel);
 
-	color = vec4(result, 1.0f);
-
-	// Check background color.
-	vec3 tempAlbedo = albedo * 255.0f;
-	if ((151.0f <= tempAlbedo.r && tempAlbedo.r <= 155.0f) &&
-		(151.0f <= tempAlbedo.g && tempAlbedo.g <= 155.0f) &&
-		(151.0f <= tempAlbedo.b && tempAlbedo.b <= 155.0f))
+	if (mask == 1.0f)
 	{
-		color = vec4(albedo, 1.0f);
+		// HDR tonemapping
+		result = result / (result + vec3(1.0f));
+		// gamma correct
+		result = pow(result, vec3(1.0f / 2.2f));
+
+		color = vec4(result, alphaChannel);
 	}
 }
 
