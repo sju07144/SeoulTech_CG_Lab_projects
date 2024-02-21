@@ -49,8 +49,8 @@ struct SceneConstant
 
 	vec3 cameraPos;
 	vec3 cameraFront;
-	float pad0;
-	float pad1;
+
+	vec2 screenSize;
 
 	vec4 ambientLight;
 	DirectionalLight directionalLights[4];
@@ -81,6 +81,6 @@ void main()
 	vs_out.worldPos = vec3(world * vec4(aPos, 1.0));
 	vs_out.texCoords = aTexCoord;
 
-	for (int i = 0; i < 4; i++)
-		vs_out.lightSpacePos[i] = sceneConstant.directionalLights[i].lightSpaceMatrix * vec4(vs_out.worldPos, 1.0);
+	// for (int i = 0; i < 4; i++)
+	//	vs_out.lightSpacePos[i] = sceneConstant.directionalLights[i].lightSpaceMatrix * vec4(vs_out.worldPos, 1.0);
 }

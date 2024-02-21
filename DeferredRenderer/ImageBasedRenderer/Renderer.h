@@ -33,7 +33,8 @@ struct SceneConstant
 
 	glm::vec3 cameraPos;
 	glm::vec3 cameraFront;
-	float pad0;
+
+	glm::vec2 screenSize;
 
 	glm::vec4 ambientLight;
 
@@ -90,8 +91,8 @@ private:
 	void BuildFramebuffers();
 
 	void BuildG_Buffers();
-	void LoadG_Buffers(const std::string& directoryName, uint32_t degree0, uint32_t degree1);
-	void LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, uint32_t degree0, uint32_t degree1);
+	void LoadG_Buffers(const std::string& directoryName, float degree0, float degree1);
+	void LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, float degree0, float degree1);
 
 	void BuildImageBasedLightsAndDraw();
 
@@ -124,10 +125,14 @@ private:
 	// camera variables
 	Camera mCamera;
 	bool isCameraMove = false;
-	uint32_t mTheta = 0, mPhi = 0;
+	float mTheta = 0.0f, mPhi = 0.0f;
 	static const float mRadius;
-	static const uint32_t mDegreeDelta;
+	static const float mDegreeDelta;
 	glm::vec3 mCurrentCameraPosition;
+	glm::vec3 mCurrentCameraFront;
+	glm::vec3 mCameraUp;
+	glm::mat4 mCurrentViewMatrix;
+	glm::mat4 mProjectionMatrix;
 
 	Model mMiniModel;
 

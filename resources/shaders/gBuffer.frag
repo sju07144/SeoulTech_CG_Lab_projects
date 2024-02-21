@@ -1,9 +1,10 @@
 #version 430 core
-layout (location = 0) out vec3 gAlbedo;
-layout (location = 1) out vec3 gNormal;
-layout (location = 2) out float gMetallic;
-layout (location = 3) out float gRoughness;
-layout (location = 4) out float gAo;
+layout (location = 0) out vec3 gPosition;
+layout (location = 1) out vec3 gAlbedo;
+layout (location = 2) out vec3 gNormal;
+layout (location = 3) out float gMetallic;
+layout (location = 4) out float gRoughness;
+layout (location = 5) out float gAo;
 
 struct SceneConstant
 {
@@ -54,6 +55,7 @@ vec3 GetNormalFromMap(sampler2D normalMap);
 
 void main()
 {
+	gPosition = vs_out.worldPos;
 	gAlbedo = material.kd;
 	gMetallic = material.metallic;
 	gRoughness = material.roughness;

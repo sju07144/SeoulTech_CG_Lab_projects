@@ -2,7 +2,7 @@
 
 Renderer* Renderer::renderer = nullptr;
 const float Renderer::mRadius = 2.6f;
-const uint32_t Renderer::mDegreeDelta = 45;
+const float Renderer::mDegreeDelta = 45.0f;
 
 void _FramebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -114,8 +114,8 @@ void Renderer::Initialize()
 	// Create G-Buffers.
 	BuildG_Buffers();
 
-	for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.directionalLightCount; lightIndex++)
-		BuildDirectionalShadowResources(lightIndex);
+	// for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.directionalLightCount; lightIndex++)
+	//	BuildDirectionalShadowResources(lightIndex);
 
 	// for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.pointLightCount; lightIndex++)
 	// 	BuildPointShadowResources(lightIndex);
@@ -156,7 +156,7 @@ void Renderer::RenderLoop()
 		DrawScene();
 
 		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_IBL_IBR_"
-			+ std::to_string(mTheta) + "_" + std::to_string(mPhi) + ".png";
+			+ std::to_string(static_cast<uint32_t>(mTheta)) + "_" + std::to_string(static_cast<uint32_t>(mPhi)) + ".png";
 		SaveScreenshotToPNG(imageDirectoryName + "\\" + currentImageFileName, mWindowWidth, mWindowHeight);
 
 		std::cout << "Save Completed " << mModelDirectoryNames[modelIndex] << "\\" << currentImageFileName << std::endl;
@@ -169,28 +169,23 @@ void Renderer::RenderLoop()
 			quadRenderItem.irradianceMap = currentImageBasedLight.GetIrradianceMap();
 			quadRenderItem.prefilterMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
 			quadRenderItem.brdfLUT = currentImageBasedLight.GetBRDFLookUpTable();
-			environmentRenderItem.environmentMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
+			environmentRenderItem.environmentMap = currentImageBasedLight.GetCubeMap();
 
 			mPhi += mDegreeDelta;
-			if (mPhi == 360)
+			if (mPhi == 360.0f)
 			{
 				mTheta += mDegreeDelta;
-				mPhi = 0;
-				if (mTheta == 225)
+				mPhi = 0.0f;
+				if (mTheta == 225.0f)
 				{
 					modelIndex++;
 					if (modelIndex == static_cast<uint32_t>(mModelDirectoryNames.size()))
 						break;
 
 					imageDirectoryName = mDatasetDirectoryName + "\\" + mModelDirectoryNames[modelIndex];
-					mTheta = 0;
+					mTheta = 0.0f;
 				}
 			}
-			mCurrentCameraPosition = glm::vec3(
-				mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::cos(glm::radians(static_cast<float>(mPhi))),
-				mRadius * glm::sin(glm::radians(static_cast<float>(mTheta - 90))),
-				mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::sin(glm::radians(static_cast<float>(mPhi)))
-			);
 		}
 		else
 		{
@@ -256,7 +251,8 @@ bool Renderer::InitializeWindow()
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	// glfwWindowHint(GLFW_SAMPLES, 4); 
+	glfwWindowHint(GLFW_SAMPLES, 9); // -> for antialiasing
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 #ifdef _APPLE_
@@ -317,8 +313,8 @@ void Renderer::UpdateData()
 }
 void Renderer::DrawScene()
 {
-	for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.directionalLightCount; lightIndex++)
-		DrawShadowMap(RenderLayer::Shadow, mProgramIDs["shadow"], lightIndex);
+	// for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.directionalLightCount; lightIndex++)
+	//	DrawShadowMap(RenderLayer::Shadow, mProgramIDs["shadow"], lightIndex);
 
 	// for (uint32_t lightIndex = 0; lightIndex < mSceneConstant.pointLightCount; lightIndex++)
 	// 	DrawShadowCubeMap(RenderLayer::Shadow, mProgramIDs["pointShadow"], lightIndex);
@@ -337,7 +333,7 @@ void Renderer::DrawScene()
 	glEnable(GL_MULTISAMPLE);
 
 	DrawRenderItems(RenderLayer::PBR_Deferred, mProgramIDs["pbr_deferred"]);
-	DrawRenderItems(RenderLayer::Environment, mProgramIDs["cubeMapHDR"], mMenu.enableEnvironment);
+	// DrawRenderItems(RenderLayer::Environment, mProgramIDs["cubeMapHDR"], mMenu.enableEnvironment);
 
 	if (mShowImGuiWindow)
 	{
@@ -368,11 +364,27 @@ void Renderer::DrawScene()
 
 void Renderer::UpdateSceneConstants()
 {
-	mSceneConstant.view = mCamera.GetView();
-	mSceneConstant.projection = mCamera.GetProjection();
-	
+	// mSceneConstant.view = mCamera.GetView();
+	// mSceneConstant.projection = mCamera.GetProjection();
+
+	mCurrentCameraPosition = glm::vec3(
+		mRadius * cos(glm::radians(mTheta - 90.0f)) * cos(glm::radians(mPhi)),
+		mRadius * sin(glm::radians(mTheta - 90.0f)),
+		mRadius * cos(glm::radians(mTheta - 90.0f)) * sin(glm::radians(mPhi))
+	);
+
+	mCurrentCameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
+
+	mCurrentViewMatrix = glm::lookAt(mCurrentCameraPosition,
+		mCurrentCameraPosition + mCurrentCameraFront,
+		mCameraUp);
+
+	// mSceneConstant.cameraPos = mCamera.GetPosition();
 	mSceneConstant.cameraPos = mCurrentCameraPosition;
-	mSceneConstant.cameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
+	mSceneConstant.cameraFront = mCurrentCameraFront;
+
+	mSceneConstant.view = mCurrentViewMatrix;
+	mSceneConstant.projection = mProjectionMatrix;
 }
 
 void Renderer::BuildTextures()
@@ -467,11 +479,10 @@ void Renderer::BuildShaders()
 	equirectangularToCubeFragmentShader.CompileShader(mShaderDirectoryName + "equirectangularToCube.frag", GL_FRAGMENT_SHADER);
 	shaderIDs.push_back(equirectangularToCubeVertexShader.GetShaderID());
 	shaderIDs.push_back(equirectangularToCubeFragmentShader.GetShaderID());
-	LinkPrograms("equirectangularToCube", shaderIDs);
+ 	LinkPrograms("equirectangularToCube", shaderIDs);
 	shaderIDs.clear();
 
 	Shader irradianceMapFragmentShader;
-	std::vector<uint32_t> irradianceMapShaderIDs;
 	irradianceMapFragmentShader.CompileShader(mShaderDirectoryName + "irradianceMap.frag", GL_FRAGMENT_SHADER);
 	shaderIDs.push_back(equirectangularToCubeVertexShader.GetShaderID());
 	shaderIDs.push_back(irradianceMapFragmentShader.GetShaderID());
@@ -495,31 +506,31 @@ void Renderer::BuildShaders()
 	shaderIDs.clear();
 
 	// shadow shader
-	Shader shadowVertexShader;
-	Shader shadowFragmentShader;
-	shadowVertexShader.CompileShader(mShaderDirectoryName + "shadow.vert", GL_VERTEX_SHADER);
-	shadowFragmentShader.CompileShader(mShaderDirectoryName + "shadow.frag", GL_FRAGMENT_SHADER);
-	shaderIDs.push_back(shadowVertexShader.GetShaderID());
-	shaderIDs.push_back(shadowFragmentShader.GetShaderID());
-	LinkPrograms("shadow", shaderIDs);
-	shaderIDs.clear();
+	// Shader shadowVertexShader;
+	// Shader shadowFragmentShader;
+	// shadowVertexShader.CompileShader(mShaderDirectoryName + "shadow.vert", GL_VERTEX_SHADER);
+	// shadowFragmentShader.CompileShader(mShaderDirectoryName + "shadow.frag", GL_FRAGMENT_SHADER);
+	// shaderIDs.push_back(shadowVertexShader.GetShaderID());
+	// shaderIDs.push_back(shadowFragmentShader.GetShaderID());
+	// LinkPrograms("shadow", shaderIDs);
+	// shaderIDs.clear();
 
-	Shader pointShadowVertexShader;
-	Shader pointShadowGeometryShader;
-	Shader pointShadowFragmentShader;
-	pointShadowVertexShader.CompileShader(mShaderDirectoryName + "pointShadow.vert", GL_VERTEX_SHADER);
-	pointShadowGeometryShader.CompileShader(mShaderDirectoryName + "pointShadow.geom", GL_GEOMETRY_SHADER);
-	pointShadowFragmentShader.CompileShader(mShaderDirectoryName + "pointShadow.frag", GL_FRAGMENT_SHADER);
-	shaderIDs.push_back(pointShadowVertexShader.GetShaderID());
-	shaderIDs.push_back(pointShadowGeometryShader.GetShaderID());
-	shaderIDs.push_back(pointShadowFragmentShader.GetShaderID());
-	LinkPrograms("pointShadow", shaderIDs);
-	shaderIDs.clear();
+	// Shader pointShadowVertexShader;
+	// Shader pointShadowGeometryShader;
+	// Shader pointShadowFragmentShader;
+	// pointShadowVertexShader.CompileShader(mShaderDirectoryName + "pointShadow.vert", GL_VERTEX_SHADER);
+	// pointShadowGeometryShader.CompileShader(mShaderDirectoryName + "pointShadow.geom", GL_GEOMETRY_SHADER);
+	// pointShadowFragmentShader.CompileShader(mShaderDirectoryName + "pointShadow.frag", GL_FRAGMENT_SHADER);
+	// shaderIDs.push_back(pointShadowVertexShader.GetShaderID());
+	// shaderIDs.push_back(pointShadowGeometryShader.GetShaderID());
+	// shaderIDs.push_back(pointShadowFragmentShader.GetShaderID());
+	// LinkPrograms("pointShadow", shaderIDs);
+	// shaderIDs.clear();
 }
 
 void Renderer::BuildFramebuffers()
 {
-	mShadowMapFramebuffer.CreateFramebuffer(mShadowMapWidth, mShadowMapHeight, 0, false, true);
+	// mShadowMapFramebuffer.CreateFramebuffer(mShadowMapWidth, mShadowMapHeight, 0, false, true);
 }
 
 void Renderer::BuildG_Buffers()
@@ -560,7 +571,7 @@ void Renderer::BuildG_Buffers()
 	mG_Buffer.insert({ "maskMap", std::move(maskMap) });
 }
 
-void Renderer::LoadG_Buffers(const std::string& directoryName, uint32_t degree0, uint32_t degree1)
+void Renderer::LoadG_Buffers(const std::string& directoryName, float degree0, float degree1)
 {
 	LoadTexture("albedo", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("normal", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
@@ -570,7 +581,7 @@ void Renderer::LoadG_Buffers(const std::string& directoryName, uint32_t degree0,
 	LoadTexture("ao", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("mask", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 }
-void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, uint32_t degree0, uint32_t degree1)
+void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, float degree0, float degree1)
 {
 	// Load image, create texture and generate mipmaps.
 	int _width, _height, _nrChannels;
@@ -586,7 +597,7 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 	else
 		textureName[0] = std::toupper(textureName[0]);
 
-	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(degree0) + "_" + std::to_string(degree1) + ".png";
+	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(static_cast<uint32_t>(degree0)) + "_" + std::to_string(static_cast<uint32_t>(degree1)) + ".png";
 
 	if (textureType == GL_UNSIGNED_BYTE)
 	{
@@ -648,7 +659,7 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 void Renderer::BuildImageBasedLightsAndDraw()
 {
 	uint32_t equirectangularToCubeShaders = mProgramIDs["equirectangularToCube"];
-	uint32_t irradianceMapShaders = mProgramIDs["irradiacneMap"];
+	uint32_t irradianceMapShaders = mProgramIDs["irradianceMap"]; // irradiacneMap -> irradianceMap
 	uint32_t prefilterMapShaders = mProgramIDs["prefilterMap"];
 	uint32_t brdfShaders = mProgramIDs["brdf"];
 
@@ -676,20 +687,31 @@ void Renderer::BuildImageBasedLightsAndDraw()
 
 void Renderer::InitializeSceneConstant()
 {
-	mSceneConstant.view = mCamera.GetView();
-	mSceneConstant.projection = mCamera.GetProjection();
+	// mSceneConstant.view = mCamera.GetView();
+	// mSceneConstant.projection = mCamera.GetProjection();
 	// mSceneConstant.projection = mCamera.GetOrthoProjection();
 
+	mCameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	mCurrentCameraPosition = glm::vec3(
-		mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::cos(glm::radians(static_cast<float>(mPhi))),
-		mRadius * glm::sin(glm::radians(static_cast<float>(mTheta - 90))),
-		mRadius * glm::cos(glm::radians(static_cast<float>(mTheta - 90))) * glm::sin(glm::radians(static_cast<float>(mPhi)))
+		mRadius * cos(glm::radians(mTheta - 90.0f)) * cos(glm::radians(mPhi)),
+		mRadius * sin(glm::radians(mTheta - 90.0f)),
+		mRadius * cos(glm::radians(mTheta - 90.0f)) * sin(glm::radians(mPhi))
 	);
+	mCurrentCameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
+	
+	mCurrentViewMatrix = glm::lookAt(mCurrentCameraPosition,
+		mCurrentCameraPosition + mCurrentCameraFront,
+		mCameraUp);
+	mProjectionMatrix = glm::perspective(glm::radians(45.0f), static_cast<float>(mWindowWidth) / static_cast<float>(mWindowHeight), 0.1f, 100.0f);
 
+	mSceneConstant.screenSize = glm::vec2(mWindowWidth, mWindowHeight);
 	// mSceneConstant.cameraPos = mCamera.GetPosition();
 	mSceneConstant.cameraPos = mCurrentCameraPosition;
-	mSceneConstant.cameraFront = glm::vec3(0.0f, 0.0f, 0.0f) - mCurrentCameraPosition;
+	mSceneConstant.cameraFront = mCurrentCameraFront;
 
+	mSceneConstant.view = mCurrentViewMatrix;
+	mSceneConstant.projection = mProjectionMatrix;
+	
 	/*
 	mSceneConstant.ambientLight = glm::vec4{ 0.05f, 0.05f, 0.05f, 1.0f };
 	mSceneConstant.directionalLights[0].direction = glm::vec3{ 0.0f, -1.0f, -1.0f };
@@ -806,7 +828,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 		SetMat4(programID, "sceneConstant.projection", mSceneConstant.projection);
 		SetVec3(programID, "sceneConstant.cameraPos", mSceneConstant.cameraPos);
 
-		for (auto renderItem : renderItems)
+		for (const auto& renderItem : renderItems)
 		{
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, renderItem.environmentMap->GetTexture());
@@ -835,6 +857,8 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 	SetMat4(programID, "sceneConstant.projection", mSceneConstant.projection);
 	SetVec3(programID, "sceneConstant.cameraPos", mSceneConstant.cameraPos);
 	SetVec3(programID, "sceneConstant.cameraFront", mSceneConstant.cameraFront);
+
+	SetVec2(programID, "sceneConstant.screenSize", mSceneConstant.screenSize);
 	
 	SetVec4(programID, "sceneConstant.ambientLight", mSceneConstant.ambientLight);
 
@@ -854,7 +878,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 	SetFloat(programID, "sceneConstant.farPlane", mSceneConstant.farPlaneForPointShadow);
 	*/
 
-	for (auto renderItem : renderItems)
+	for (const auto& renderItem : renderItems)
 	{
 		SetMat4(programID, "world", renderItem.world);
 		SetVec3(programID, "material.ka", renderItem.material->ka);
@@ -864,10 +888,11 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 		SetFloat(programID, "material.roughness", renderItem.material->roughness);
 		SetFloat(programID, "material.ao", renderItem.material->ao);
 
-		const auto& albedoMaps = renderItem.albedoMaps;
 		uint32_t i = 0;
+
+		const auto& albedoMaps = renderItem.albedoMaps;
 		uint32_t albedoMapCount = 0;
-		for (auto albedoMap : albedoMaps)
+		for (const auto& albedoMap : albedoMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, albedoMap->GetTexture());
@@ -875,19 +900,19 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 			i++;
 		}
 
-		const auto& specularMaps = renderItem.specularMaps;
-		uint32_t specularMapCount = 0;
-		for (auto specularMap : specularMaps)
-		{
-			glActiveTexture(GL_TEXTURE0 + i);
-			glBindTexture(GL_TEXTURE_2D, specularMap->GetTexture());
-			SetInt(programID, "specularMap" + std::to_string(specularMapCount++), i);
-			i++;
-		}
+		// const auto& specularMaps = renderItem.specularMaps;
+		// uint32_t specularMapCount = 0;
+		// for (const auto& specularMap : specularMaps)
+		// {
+		// 	glActiveTexture(GL_TEXTURE0 + i);
+		// 	glBindTexture(GL_TEXTURE_2D, specularMap->GetTexture());
+		// 	SetInt(programID, "specularMap" + std::to_string(specularMapCount++), i);
+		// 	i++;
+		// }
 
 		const auto& normalMaps = renderItem.normalMaps;
 		uint32_t normalMapCount = 0;
-		for (auto normalMap : normalMaps)
+		for (const auto& normalMap : normalMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, normalMap->GetTexture());
@@ -897,7 +922,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& metallicMaps = renderItem.metallicMaps;
 		uint32_t metallicMapCount = 0;
-		for (auto metallicMap : metallicMaps)
+		for (const auto& metallicMap : metallicMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, metallicMap->GetTexture());
@@ -907,7 +932,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& roughnessMaps = renderItem.roughnessMaps;
 		uint32_t roughnessMapCount = 0;
-		for (auto roughnessMap : roughnessMaps)
+		for (const auto& roughnessMap : roughnessMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, roughnessMap->GetTexture());
@@ -917,7 +942,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& metallicRoughnessMaps = renderItem.metallicRoughnessMaps;
 		uint32_t metallicRoughnessMapCount = 0;
-		for (auto metallicRoughnessMap : metallicRoughnessMaps)
+		for (const auto& metallicRoughnessMap : metallicRoughnessMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap->GetTexture());
@@ -927,7 +952,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& aoMaps = renderItem.aoMaps;
 		uint32_t aoMapCount = 0;
-		for (auto aoMap : aoMaps)
+		for (const auto& aoMap : aoMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, aoMap->GetTexture());
@@ -937,7 +962,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& maskMaps = renderItem.maskMaps;
 		uint32_t maskMapCount = 0;
-		for (auto maskMap : maskMaps)
+		for (const auto& maskMap : maskMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, maskMap->GetTexture());
@@ -962,7 +987,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& shadowMaps = renderItem.shadowMaps;
 		uint32_t shadowMapCount = 0;
-		for (auto shadowMap : shadowMaps)
+		for (const auto& shadowMap : shadowMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, shadowMap->GetTexture());
@@ -972,7 +997,7 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 		const auto& shadowCubeMaps = renderItem.shadowCubeMaps;
 		uint32_t shadowCubeMapCount = 0;
-		for (auto shadowCubeMap : shadowCubeMaps)
+		for (const auto& shadowCubeMap : shadowCubeMaps)
 		{
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_CUBE_MAP, shadowCubeMap->GetTexture());

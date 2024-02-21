@@ -60,7 +60,25 @@ for hdr_name in hdr_file_names:
     plt.suptitle(hdr_name)
     plt.savefig(os.path.join(metrics_directory, 'statistics', hdr_name.replace('.hdr', '.png')))
     
-print('Complete')
+print('Complete(by)')
+    
+fig = plt.figure()
+ax = fig.gca(projection='3d')
+
+thetas = metrics_dataframe['Theta']
+phis = metrics_dataframe['Phi']
+mses = metrics_dataframe['MSE']
+
+ax.view_init(elev=0., azim=0) 
+ax.scatter(thetas, phis, mses)
+ax.set_xlabel('Theta')
+ax.set_ylabel('Phi')
+ax.set_zlabel('MSE')
+ax.set_title("Dataset")
+
+plt.savefig(os.path.join(metrics_directory, 'statistics', 'dataset(phi).png'))
+    
+print('Complete(all)')
         
 
 

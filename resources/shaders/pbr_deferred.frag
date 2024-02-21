@@ -45,8 +45,8 @@ struct SceneConstant
 
 	vec3 cameraPos;
 	vec3 cameraFront;
-	float pad0;
-	float pad1;
+
+	vec2 screenSize;
 
 	vec4 ambientLight;
 	DirectionalLight directionalLights[4];
@@ -58,7 +58,7 @@ struct SceneConstant
 
 struct Material
 {
-	vec3 ka;
+	vec3 ka; 
 	vec3 kd;
 	vec3 ks;
 
@@ -89,6 +89,7 @@ uniform bool enableImageBasedLighting;
 uniform bool enableShadow;
 
 uniform Material material;
+// uniform sampler2D positionMap0;
 uniform sampler2D albedoMap0;
 uniform sampler2D normalMap0;
 uniform sampler2D metallicMap0;
@@ -108,11 +109,13 @@ uniform SceneConstant sceneConstant;
 
 const float PI = 3.14159265359f;
 
+vec3 ScreenToWorld(vec2 screenCoords);
+
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 vec3 FresnelSchlick(float cosTheta, vec3 F0);
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);   
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);   
 
 vec3 BlinnPhong(vec3 ambient, vec3 diffuse, vec3 specular,
 	float shininess, vec3 surfaceColor,
@@ -131,13 +134,18 @@ vec3 CalculateSpotLight(SpotLight light,
 	vec3 viewDir, vec3 normal);
 
 vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
-	vec3 viewDir, vec3 normal, vec3 viewReflection);
+	vec3 V, vec3 N, vec3 R);
 
 float CalculateShadow(vec4 lightSpacePos, vec3 normal, vec3 lightDir, sampler2D shadowMap);
 float CalculatePointShadow(vec3 worldPos, vec3 viewPos, vec3 lightPos, samplerCube shadowCubeMap);
 
 void main()
 {
+	// vec2 pixelCoords = gl_FragCoord.xy;
+	// vec3 position = ScreenToWorld(pixelCoords);
+	// vec3 position = texture(positionMap0, vs_out.texCoords).rgb;
+	vec3 position = vs_out.worldPos;
+
 	vec3 albedo = texture(albedoMap0, vs_out.texCoords).rgb;
 	float alphaChannel = texture(albedoMap0, vs_out.texCoords).a;
 	float metallic = texture(metallicMap0, vs_out.texCoords).r;
@@ -145,17 +153,18 @@ void main()
 	float ao = texture(aoMap0, vs_out.texCoords).r;
 	float mask = texture(maskMap0, vs_out.texCoords).r;
 
-	vec3 N = normalize(2.0f * texture(normalMap0, vs_out.texCoords).rgb - 1.0f);
+	vec3 N = 2.0 * texture(normalMap0, vs_out.texCoords).rgb - 1.0;
 
-	vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3f - vs_out.worldPos);
+	vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3 - position);
+	// vec3 V = normalize(sceneConstant.cameraPos - position);
 	vec3 R = reflect(-V, N);
 
 	// calculate reflectance at normal incidence; if dia-electric (like plastic) use F0 
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)   
-	vec3 F0 = vec3(0.04f);
+	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo, metallic);
 
-	vec3 pointLightColor = vec3(0.0f);	
+	vec3 pointLightColor = vec3(0.0);	
 
 	for (int i = 0; i < NUM_POINT_LIGHTS; i++)
 	{
@@ -165,7 +174,7 @@ void main()
 			V, N);
 	}
 
-	vec3 directionalLightColor = vec3(0.0f);	
+	vec3 directionalLightColor = vec3(0.0);	
 
 	for (int i = 0; i < NUM_DIRECTIONAL_LIGHTS; i++)
 	{
@@ -175,7 +184,7 @@ void main()
 			V, N);
 	}
 
-	vec3 spotLightColor = vec3(0.0f);	
+	vec3 spotLightColor = vec3(0.0);	
 
 	for (int i = 0; i < NUM_SPOT_LIGHTS; i++)
 	{
@@ -186,7 +195,8 @@ void main()
 
 	// ambient lighting (note that the next IBL tutorial will replace 
     // this ambient lighting with environment lighting).
-	vec3 ambient = vec3(0.002f);
+
+	vec3 ambient = vec3(0.002);
 	ambient = ambient * albedo * ao;
 	if (enableImageBasedLighting)
 		ambient = CalculateImageBasedLight(albedo, metallic, roughness, ao, F0, V, N, R);
@@ -196,26 +206,70 @@ void main()
 	// First, initialize background color. Then, Check whether image-based light can be enabled or not.
 	color = vec4(albedo, alphaChannel);
 
-	if (mask == 1.0f)
-	{
+	// For debugging
+	// vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+	// 
+	// vec3 kS = F;
+	// vec3 kD = 1.0 - kS;
+	// kD *= 1.0 - metallic;
+	// 
+	// vec3 irradiance = texture(irradianceMap, N).rgb;
+	// vec3 diffuse = irradiance * albedo;
+	// 
+	// const float MAX_REFLECTION_LOD = 4.0;
+	// vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+	// vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	// vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	// 
+	// result = kD * diffuse;
+
+	if (mask == 1.0)
+	{		
 		// HDR tonemapping
-		result = result / (result + vec3(1.0f));
+		result = result / (result + vec3(1.0));
 		// gamma correct
-		result = pow(result, vec3(1.0f / 2.2f));
+		result = pow(result, vec3(1.0 / 2.2));
 
 		color = vec4(result, alphaChannel);
+		// color = vec4((V + 1.0) / 2.0, 1.0);
 	}
+}
+
+vec3 ScreenToWorld(vec2 screenCoords)
+{
+	// Normalize screen coordinates to NDC
+	vec2 normalizedCoords = (2.0 * screenCoords - sceneConstant.screenSize) / sceneConstant.screenSize;
+
+	// Add homogeneous coordinate
+	vec4 ndcCoords = vec4(normalizedCoords, 0.0, 1.0);
+
+	// Invert projection matrix
+	mat4 invProjection = inverse(sceneConstant.projection);
+
+	// Convert to view space
+	vec4 viewCoords = invProjection * ndcCoords;
+
+	// Divide by W to get homogeneous coordinates
+	viewCoords /= viewCoords.w;
+
+	// Invert view matrix
+	mat4 invView = inverse(sceneConstant.view);
+
+	// Convert to world coordinates
+	vec4 worldCoords = invView * viewCoords;
+
+	return worldCoords.xyz;
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
 	float a = roughness * roughness;
 	float a2 = a * a;
-	float NdotH = max(dot(N, H), 0.0f);
+	float NdotH = max(dot(N, H), 0.0);
 	float NdotH2 = NdotH * NdotH;
 
 	float nom = a2;
-	float denom = (NdotH2 * (a2 - 1.0f) + 1.0f);
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
 	denom = PI * denom * denom;
 	
 	return nom / denom;
@@ -223,7 +277,7 @@ float DistributionGGX(vec3 N, vec3 H, float roughness)
 
 float GeometrySchlickGGX(float NdotV, float roughness)
 {
-	float r = (roughness + 1.0f);
+	float r = (roughness + 1.0);
 	float k = (r * r) / 8.0;
 
 	float nom = NdotV;
@@ -244,12 +298,12 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
-	return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+	return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0f - roughness), F0) - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }   
 
 vec3 CookTorrance(vec3 lightDir, vec3 radiance,
@@ -262,10 +316,10 @@ vec3 CookTorrance(vec3 lightDir, vec3 radiance,
 	// Cook-Torrance BRDF
 	float NDF = DistributionGGX(normal, halfway, roughness);
 	float G = GeometrySmith(normal, viewDir, lightDir, roughness);
-	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0f), F0);
+	vec3 F = FresnelSchlick(max(dot(halfway, viewDir), 0.0), F0);
 
 	vec3 numerator = NDF * G * F;
-	float denominator = 4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f) + 0.0001f; // + 0.0001 to prevent divide by zero
+	float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0) + 0.0001; // + 0.0001 to prevent divide by zero
 	vec3 specular = numerator / denominator;
 
 	// kS is equal to Fresnel
@@ -277,10 +331,10 @@ vec3 CookTorrance(vec3 lightDir, vec3 radiance,
 	// multiply kD by the inverse metalness such that only non-metals 
     // have diffuse lighting, or a linear blend if partly metal (pure metals
     // have no diffuse light).
-	kD *= (1.0f - metallic);
+	kD *= (1.0 - metallic);
 
 	// scale light by NdotL
-	float NdotL = max(dot(normal, lightDir), 0.0f);
+	float NdotL = max(dot(normal, lightDir), 0.0);
 
 	return (kD * albedo / PI + specular) * radiance * NdotL; // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
 }
@@ -292,17 +346,17 @@ vec3 CalculatePointLight(PointLight light, samplerCube shadowCubeMap,
 	// calculate per-light radiance
 	vec3 lightDir = normalize(light.position - vs_out.worldPos);
 	float distance = length(light.position - vs_out.worldPos);
-	float attenuation = 1.0f / (distance * distance);
+	float attenuation = 1.0 / (distance * distance);
 	vec3 radiance = light.diffuse * attenuation;
 
 	// calculate shadow.
-	float shadow = 0.0f;
+	float shadow = 0.0;
 	// if (enableShadow)
 	// 	shadow = CalculatePointShadow(vs_out.worldPos, sceneConstant.cameraPos, light.position, shadowCubeMap);
 	// else
 	// 	shadow = 0.0f;
 
-	return (1.0f - shadow) * CookTorrance(lightDir, radiance,
+	return (1.0 - shadow) * CookTorrance(lightDir, radiance,
 		albedo, metallic, roughness, ao, F0,
 		viewDir, normal);
 }
@@ -316,11 +370,11 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec4 lightSpacePos, sampl
 	vec3 radiance = light.diffuse;
 
 	// calculate shadow.
-	float shadow = 0.0f;
+	float shadow = 0.0;
 	if (enableShadow)
 		shadow = CalculateShadow(lightSpacePos, normal, lightDir, shadowMap);
 	else
-		shadow = 0.0f;
+		shadow = 0.0;
 
 	return (1.0f - shadow) * CookTorrance(lightDir, radiance,
 		albedo, metallic, roughness, ao, F0,
@@ -348,22 +402,22 @@ vec3 CalculateSpotLight(SpotLight light,
 }
 
 vec3 CalculateImageBasedLight(vec3 albedo, float metallic, float roughness, float ao, vec3 F0,
-	vec3 viewDir, vec3 normal, vec3 viewReflection)
+	vec3 V, vec3 N, vec3 R)
 {
-	vec3 F = FresnelSchlickRoughness(max(dot(normal, viewDir), 0.0f), F0, roughness);
+	vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
 	vec3 kS = F;
-	vec3 kD = 1.0f - kS;
-	kD *= (1.0f - metallic);
+	vec3 kD = 1.0 - kS;
+	kD *= 1.0 - metallic;
 	
-	vec3 irradiance = texture(irradianceMap, normal).rgb;
+	vec3 irradiance = texture(irradianceMap, N).rgb;
 	vec3 diffuse = irradiance * albedo;
 
 	// sample both the pre-filter map and the BRDF lut and combine them together as per the Split-Sum approximation to get the IBL specular part.
 	const float MAX_REFLECTION_LOD = 4.0;
-	vec3 prefilteredColor = textureLod(prefilterMap, viewReflection, roughness * MAX_REFLECTION_LOD).rgb;
-	vec2 brdf = texture(brdfLUT, vec2(max(dot(normal, viewDir), 0.0), roughness)).rg;
-	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+	vec2 envBRDF = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
 	
 	return (kD * diffuse + specular) * ao;
 }

@@ -20,20 +20,14 @@ def to_database(db_path, db_name, dataframe):
     
     dataframe.to_sql(db_name, con)
     
-def mse_without_background(image0, image1):
-    height, width, channel = image0.shape
-    pixel_count = 0
-    total_error = 0
-    
-    for y in range(height):
-        for x in range(width):
-            if (image0[y, x, :] != image1[y, x, :]).all():
-                error = np.sum(np.abs(image0[y, x, :] - image1[y, x, :]))
-                total_error += error
-                pixel_count += 1
-    
-    total_error /= pixel_count
-    return total_error
+def mse_without_background(image0, image1, mask=None):
+    assert image0.shape == image1.shape, "Shape is not same!"
+    error = np.subtract(image0, image1)
+    if mask is not None:
+        error = mask * error
+    indices = np.where(error == 0)
+    error = np.delete(error, indices)
+    return np.mean(error**2, dtype=np.float64)
                     
 dataset_directory = os.path.join("..", "resources", "IBL_rendered_examples")
 
@@ -66,14 +60,17 @@ for model_directory in model_directories:
             for hdr_index in range(1, 7):
                 gt_image_name = "HDR" + str(hdr_index) + "_IBL_" + str(theta) + "_" + str(phi) + ".png"
                 ibr_image_name = "HDR" + str(hdr_index) + "_IBL_IBR_" + str(theta) + "_" + str(phi) + ".png"
+                mask_image_name = "Mask_" + str(theta) + "_" + str(phi) + ".png"
                 gt_image_path = os.path.join(model_directory, gt_image_name)
                 ibr_image_path = os.path.join(model_directory, ibr_image_name)
+                mask_image_path = os.path.join(model_directory, mask_image_name)
                 
                 gt_image = cv.imread(gt_image_path)
                 ibr_image = cv.imread(ibr_image_path)
+                mask_image = cv.imread(mask_image_path)
                 
                 if gt_image is not None and ibr_image is not None:
-                    _mse = mse(gt_image, ibr_image)
+                    _mse = mse_without_background(gt_image, ibr_image, mask_image)
                     # _mse_without_background = mse_without_background(gt_image, ibr_image)
                     # print(_mse_without_background)
                     # _psnr = psnr(gt_image, ibr_image)
@@ -99,4 +96,4 @@ metrics_dataframe = pd.DataFrame(metrics_data)
 print(metrics_dataframe.head())
 print(metrics_dataframe.tail())
 
-metrics_dataframe.to_csv('../resources/metrics.csv')
+metrics_dataframe.to_csv('../resources/metrics(without_background).csv')
