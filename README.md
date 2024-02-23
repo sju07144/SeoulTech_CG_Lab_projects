@@ -1,6 +1,13 @@
 # SeoulTech_CG_Lab_projects
 Image-based Lighting Deferred Renderer
 
+## 개발환경
+- 'C++20'(for renderer), 'Python 3.10'(for loss calculator), 'GLSL version 430'(for shader)
+- 'Visual studio 2019'(for renderer), 'Visual studio code'(for loss calculator)
+- Framework: OpenGL 4.3, OpenCV 4.8
+- Library: GLFW, glad, assimp, glm, stb
+- GUI: imgui (https://github.com/ocornut/imgui)
+
 ## 각종 Directory 정보
 - cores: 기본 geometry 생성(box, sphere, quad 등), camera 생성, mesh 초기화, model 파일 로딩, shader 빌드, texture 생성 등을 담당하는 코드를 담아둠.
 - DeferredRenderer: DeferredRenderer의 하위폴더인 ImagebasedRenderer에 프로젝트 파일, main.cpp(main 함수), Renderer.h/Renderer.cpp가 담겨있음.
