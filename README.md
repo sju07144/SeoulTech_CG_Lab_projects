@@ -1,5 +1,8 @@
 # SeoulTech_CG_Lab_projects
-Image-based Lighting Deferred Renderer
+Image-based Deferred Renderer for IBL
+
+## 개요
+본 프로젝트에서는 Image-based Deferred Renderer를 구현한다. Forward rendering을 수행할 때 사용하는 각종 scene parameter(albedo color, normal 벡터 등)를 이미지로 출력하고 그러한 이미지를 texture map 형태로 이용하여 deferred rendering을 수행하는 프로젝트이다. 조명 기법으로는 기본적으로 image-based lighting을 사용하지만 Phong shading 또는 일반적인 Physically-based Rendering 기법도 사용할 수 있다. PBR과 IBL를 사용할 경우, metallic, roughness, ao map도 이용하게 된다. 그리고 pixtopix를 이용하여 생성한 texture map을 이용하여 Deferred Rendering을 수행하기도 한다. 또한, 본 프로젝트에서는 forward rendering을 수행하여 출력한 이미지와 image-based deferred rendering을 수행하여 출력한 이미지와의 오차(주로, RMSE)를 계산하고 출력한다.
 
 ## 개발환경
 - 'C++20'(for renderer), 'Python 3.10'(for loss calculator), 'GLSL version 430'(for shader)
@@ -7,6 +10,9 @@ Image-based Lighting Deferred Renderer
 - Framework: OpenGL 4.3, OpenCV 4.8
 - Library: GLFW, glad, assimp, glm, stb
 - GUI: imgui (https://github.com/ocornut/imgui)
+
+## 실행방법
+솔루션 파일을 열어 실행을 해주면 윈도우 창을 하나 생성하며 이 윈도우 창에서 렌더링을 수행한다. 특정 카메라 벡터에서의 수행이 한 번 끝나면 렌더링된 이미지를 캡쳐하여 저장하게 되며 완료할 시, 커맨드 창에서 "Save Completed ***.png"를 출력한다.
 
 ## 각종 Directory 정보
 - cores: 기본 geometry 생성(box, sphere, quad 등), camera 생성, mesh 초기화, model 파일 로딩, shader 빌드, texture 생성 등을 담당하는 코드를 담아둠.
