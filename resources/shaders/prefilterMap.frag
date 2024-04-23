@@ -11,7 +11,7 @@ out vec4 color;
 uniform samplerCube environmentMap;
 uniform float roughness;
 
-const float PI = 3.14159265359f;
+const float PI = 3.14159265359;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {

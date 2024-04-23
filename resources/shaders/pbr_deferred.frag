@@ -43,6 +43,9 @@ struct SceneConstant
 	mat4 view;
 	mat4 projection;
 
+	mat4 invView;
+	mat4 invProjection;
+
 	vec3 cameraPos;
 	vec3 cameraFront;
 
@@ -97,6 +100,8 @@ uniform sampler2D roughnessMap0;
 uniform sampler2D metallicRoughnessMap0;
 uniform sampler2D aoMap0;
 uniform sampler2D maskMap0;
+uniform sampler2D depthMap0;
+uniform sampler2D viewMap0;
 
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
@@ -109,7 +114,8 @@ uniform SceneConstant sceneConstant;
 
 const float PI = 3.14159265359f;
 
-vec3 ScreenToWorld(vec2 screenCoords);
+vec3 ScreenToWorld(vec2 screenCoords, float depth);
+vec3 WorldPosFromDepth(float depth);
 
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
@@ -141,21 +147,24 @@ float CalculatePointShadow(vec3 worldPos, vec3 viewPos, vec3 lightPos, samplerCu
 
 void main()
 {
-	// vec2 pixelCoords = gl_FragCoord.xy;
-	// vec3 position = ScreenToWorld(pixelCoords);
-	// vec3 position = texture(positionMap0, vs_out.texCoords).rgb;
-	vec3 position = vs_out.worldPos;
-
 	vec3 albedo = texture(albedoMap0, vs_out.texCoords).rgb;
 	float alphaChannel = texture(albedoMap0, vs_out.texCoords).a;
 	float metallic = texture(metallicMap0, vs_out.texCoords).r;
 	float roughness = texture(roughnessMap0, vs_out.texCoords).r;
 	float ao = texture(aoMap0, vs_out.texCoords).r;
 	float mask = texture(maskMap0, vs_out.texCoords).r;
+	float depth = texture(depthMap0, vs_out.texCoords).r;
+
+	// vec2 pixelCoords = gl_FragCoord.xy;
+	// vec3 position = ScreenToWorld(pixelCoords, depth);
+	// vec3 position = texture(positionMap0, vs_out.texCoords).rgb;
+	vec3 position = vs_out.worldPos;
+	// vec3 position = WorldPosFromDepth(depth);
 
 	vec3 N = 2.0 * texture(normalMap0, vs_out.texCoords).rgb - 1.0;
 
-	vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3 - position);
+	// vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3 - position);
+	vec3 V = 2.0 * texture(viewMap0, vs_out.texCoords).rgb - 1.0;
 	// vec3 V = normalize(sceneConstant.cameraPos - position);
 	vec3 R = reflect(-V, N);
 
@@ -207,21 +216,21 @@ void main()
 	color = vec4(albedo, alphaChannel);
 
 	// For debugging
-	// vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
-	// 
-	// vec3 kS = F;
-	// vec3 kD = 1.0 - kS;
-	// kD *= 1.0 - metallic;
-	// 
-	// vec3 irradiance = texture(irradianceMap, N).rgb;
-	// vec3 diffuse = irradiance * albedo;
-	// 
-	// const float MAX_REFLECTION_LOD = 4.0;
-	// vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
-	// vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-	// vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-	// 
-	// result = kD * diffuse;
+	vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+	
+	vec3 kS = F;
+	vec3 kD = 1.0 - kS;
+	kD *= 1.0 - metallic;
+	
+	vec3 irradiance = texture(irradianceMap, N).rgb;
+	vec3 diffuse = irradiance * albedo;
+	
+	const float MAX_REFLECTION_LOD = 4.0;
+	vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+	vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	
+	result = kD * diffuse;
 
 	if (mask == 1.0)
 	{		
@@ -231,34 +240,44 @@ void main()
 		result = pow(result, vec3(1.0 / 2.2));
 
 		color = vec4(result, alphaChannel);
-		// color = vec4((V + 1.0) / 2.0, 1.0);
+		color = vec4(prefilteredColor, 1.0);
 	}
 }
 
-vec3 ScreenToWorld(vec2 screenCoords)
+vec3 ScreenToWorld(vec2 screenCoords, float depth)
 {
 	// Normalize screen coordinates to NDC
 	vec2 normalizedCoords = (2.0 * screenCoords - sceneConstant.screenSize) / sceneConstant.screenSize;
 
-	// Add homogeneous coordinate
-	vec4 ndcCoords = vec4(normalizedCoords, 0.0, 1.0);
+	float z = depth * 2.0 - 1.0;
 
-	// Invert projection matrix
-	mat4 invProjection = inverse(sceneConstant.projection);
+	// Add homogeneous coordinate
+	vec4 ndcCoords = vec4(normalizedCoords, z, 1.0);
 
 	// Convert to view space
-	vec4 viewCoords = invProjection * ndcCoords;
+	vec4 viewCoords = sceneConstant.invProjection * ndcCoords;
 
 	// Divide by W to get homogeneous coordinates
 	viewCoords /= viewCoords.w;
 
-	// Invert view matrix
-	mat4 invView = inverse(sceneConstant.view);
-
 	// Convert to world coordinates
-	vec4 worldCoords = invView * viewCoords;
+	vec4 worldCoords = sceneConstant.invView * viewCoords;
 
 	return worldCoords.xyz;
+}
+vec3 WorldPosFromDepth(float depth)
+{
+	float z = depth * 2.0 - 1.0;
+
+	vec4 clipSpacePosition = vec4(vs_out.texCoords * 2.0 - 1.0, z, 1.0);
+
+	vec4 viewSpacePosition = sceneConstant.invProjection * clipSpacePosition;
+
+	viewSpacePosition /= viewSpacePosition.w;
+
+	vec4 worldSpacePosition = sceneConstant.invView * viewSpacePosition;
+
+	return worldSpacePosition.xyz;
 }
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)

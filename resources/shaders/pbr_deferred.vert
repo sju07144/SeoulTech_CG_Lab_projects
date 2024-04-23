@@ -47,6 +47,9 @@ struct SceneConstant
 	mat4 view;
 	mat4 projection;
 
+	mat4 invView;
+	mat4 invProjection;
+
 	vec3 cameraPos;
 	vec3 cameraFront;
 

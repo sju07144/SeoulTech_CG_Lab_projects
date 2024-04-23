@@ -155,7 +155,7 @@ void Renderer::RenderLoop()
 		UpdateData();
 		DrawScene();
 
-		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_IBL_IBR_"
+		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_PrefilterColor_"
 			+ std::to_string(static_cast<uint32_t>(mTheta)) + "_" + std::to_string(static_cast<uint32_t>(mPhi)) + ".png";
 		SaveScreenshotToPNG(imageDirectoryName + "\\" + currentImageFileName, mWindowWidth, mWindowHeight);
 
@@ -385,6 +385,9 @@ void Renderer::UpdateSceneConstants()
 
 	mSceneConstant.view = mCurrentViewMatrix;
 	mSceneConstant.projection = mProjectionMatrix;
+
+	mSceneConstant.invView = glm::inverse(mCurrentViewMatrix);
+	mSceneConstant.invProjection = glm::inverse(mProjectionMatrix);
 }
 
 void Renderer::BuildTextures()
@@ -569,6 +572,16 @@ void Renderer::BuildG_Buffers()
 	maskMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
 		false, true, mWindowWidth, mWindowHeight, GL_RGB);
 	mG_Buffer.insert({ "maskMap", std::move(maskMap) });
+
+	Texture depthMap;
+	depthMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	mG_Buffer.insert({ "depthMap", std::move(depthMap) });
+
+	Texture viewMap;
+	viewMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	mG_Buffer.insert({ "viewMap", std::move(viewMap) });
 }
 
 void Renderer::LoadG_Buffers(const std::string& directoryName, float degree0, float degree1)
@@ -580,6 +593,8 @@ void Renderer::LoadG_Buffers(const std::string& directoryName, float degree0, fl
 	LoadTexture("metallicRoughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("ao", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("mask", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("depth", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("view", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 }
 void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, float degree0, float degree1)
 {
@@ -594,6 +609,8 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 		textureName = "AO";
 	else if (textureName == "metallicRoughness")
 		textureName = "Metallic-Roughness";
+	else if (textureName == "view")
+		textureName = "view";
 	else
 		textureName[0] = std::toupper(textureName[0]);
 
@@ -711,6 +728,9 @@ void Renderer::InitializeSceneConstant()
 
 	mSceneConstant.view = mCurrentViewMatrix;
 	mSceneConstant.projection = mProjectionMatrix;
+
+	mSceneConstant.invView = glm::inverse(mCurrentViewMatrix);
+	mSceneConstant.invProjection = glm::inverse(mProjectionMatrix);
 	
 	/*
 	mSceneConstant.ambientLight = glm::vec4{ 0.05f, 0.05f, 0.05f, 1.0f };
@@ -779,8 +799,9 @@ void Renderer::BuildRenderItems()
 
 	renderItem.mesh = &mBasicMeshes["quad"];
 	float scalingSize = static_cast<float>(1.0 / renderItem.mesh->GetDiagnalLength());
+	glm::vec3 boxCenter = renderItem.mesh->GetBoundingBoxCenter();
 	glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
-	glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), renderItem.mesh->GetBoundingBoxCenter());
+	glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-boxCenter.x, -boxCenter.y, -boxCenter.z));
 	glm::mat4 normalizeMatrix = scalingMatrix * translateMatrix;
 	renderItem.world = normalizeMatrix;
 	renderItem.material = &mBasicMaterials["pbrSphere"];
@@ -791,6 +812,8 @@ void Renderer::BuildRenderItems()
 	renderItem.metallicRoughnessMaps.push_back(&mG_Buffer["metallicRoughnessMap"]);
 	renderItem.aoMaps.push_back(&mG_Buffer["aoMap"]);
 	renderItem.maskMaps.push_back(&mG_Buffer["maskMap"]);
+	renderItem.depthMaps.push_back(&mG_Buffer["depthMap"]);
+	renderItem.viewMaps.push_back(&mG_Buffer["viewMap"]);
 	renderItem.irradianceMap = mImageBasedLights[0].GetIrradianceMap();
 	renderItem.prefilterMap = mImageBasedLights[0].GetPreFilteredEnvironmentMap();
 	renderItem.brdfLUT = mImageBasedLights[0].GetBRDFLookUpTable();
@@ -855,6 +878,8 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 	SetMat4(programID, "sceneConstant.view", mSceneConstant.view);
 	SetMat4(programID, "sceneConstant.projection", mSceneConstant.projection);
+	SetMat4(programID, "sceneConstant.invView", mSceneConstant.invView);
+	SetMat4(programID, "sceneConstant.invProjection", mSceneConstant.invProjection);
 	SetVec3(programID, "sceneConstant.cameraPos", mSceneConstant.cameraPos);
 	SetVec3(programID, "sceneConstant.cameraFront", mSceneConstant.cameraFront);
 
@@ -880,7 +905,16 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 	for (const auto& renderItem : renderItems)
 	{
-		SetMat4(programID, "world", renderItem.world);
+		float scalingSize = static_cast<float>(1.0 / renderItem.mesh->GetDiagnalLength());
+		glm::vec3 boxCenter = renderItem.mesh->GetBoundingBoxCenter();
+		glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
+		glm::mat4 rotateThetaMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f - mTheta), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::mat4 rotatePhiMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f - mPhi), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-boxCenter.x, -boxCenter.y, -boxCenter.z));
+		glm::mat4 normalizeMatrix = scalingMatrix * rotateThetaMatrix * rotatePhiMatrix * translateMatrix;
+		// renderItem.world = normalizeMatrix;
+		// SetMat4(programID, "world", renderItem.world);
+		SetMat4(programID, "world", normalizeMatrix);
 		SetVec3(programID, "material.ka", renderItem.material->ka);
 		SetVec3(programID, "material.kd", renderItem.material->kd);
 		SetVec3(programID, "material.ks", renderItem.material->ks);
@@ -967,6 +1001,26 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 			glActiveTexture(GL_TEXTURE0 + i);
 			glBindTexture(GL_TEXTURE_2D, maskMap->GetTexture());
 			SetInt(programID, "maskMap" + std::to_string(maskMapCount++), i);
+			i++;
+		}
+
+		const auto& depthMaps = renderItem.depthMaps;
+		uint32_t depthMapCount = 0;
+		for (const auto& depthMap : depthMaps)
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, depthMap->GetTexture());
+			SetInt(programID, "depthMap" + std::to_string(depthMapCount++), i);
+			i++;
+		}
+
+		const auto& viewMaps = renderItem.viewMaps;
+		uint32_t viewMapCount = 0;
+		for (const auto& viewMap : viewMaps)
+		{
+			glActiveTexture(GL_TEXTURE0 + i);
+			glBindTexture(GL_TEXTURE_2D, viewMap->GetTexture());
+			SetInt(programID, "viewMap" + std::to_string(viewMapCount++), i);
 			i++;
 		}
 

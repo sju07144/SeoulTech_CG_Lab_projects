@@ -31,6 +31,9 @@ struct SceneConstant
 	glm::mat4 view;
 	glm::mat4 projection;
 
+	glm::mat4 invView;
+	glm::mat4 invProjection;
+
 	glm::vec3 cameraPos;
 	glm::vec3 cameraFront;
 
