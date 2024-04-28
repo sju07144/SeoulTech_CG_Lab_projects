@@ -23,7 +23,7 @@ This project is a study of Image-based Deferred Rendering and aims to compare th
 - [OpenCV](https://opencv.org/releases/): Image processing
 - [`stb_image.h`](https://github.com/nothings/stb): Load image files and proccess
 - [Dear ImGui](https://github.com/ocornut/imgui): for GUI
-### LossCalculator
+### Loss Calculator
 - numpy 1.26.2
 - matplotlib 3.3.4 -> 3.8.1
 - pandas 2.1.3
