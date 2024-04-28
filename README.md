@@ -1,7 +1,5 @@
 # Image-based Deferred Renderer for IBL
 This project is a study of Image-based Deferred Rendering and aims to compare the images of forward rendering and deferred rendering under set conditions to explore the differences between them and reduce the differences as much as possible. The method is to output various scene parameters (albedo color, normal vector, etc.) used when performing forward rendering as images and use such images as texture maps to perform deferred rendering. For lighting techniques, image-based lighting is used by default, but you can also use Phong shading or general Physically-based Rendering techniques. When using PBR and IBL, you will also use metallic, roughness, and ao maps. In addition, in this project, we will calculate and output the error between the image output by performing forward rendering and the image output by performing image-based deferred rendering. The error will mainly use RMSE.
-
-Translated with DeepL.com (free version)
 ## Tech spec
 ISO C++ 14 standard
 Python 3.9
