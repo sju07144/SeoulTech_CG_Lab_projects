@@ -155,7 +155,7 @@ void Renderer::RenderLoop()
 		UpdateData();
 		DrawScene();
 
-		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_PrefilterColor_"
+		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_IBL_IBR_"
 			+ std::to_string(static_cast<uint32_t>(mTheta)) + "_" + std::to_string(static_cast<uint32_t>(mPhi)) + ".png";
 		SaveScreenshotToPNG(imageDirectoryName + "\\" + currentImageFileName, mWindowWidth, mWindowHeight);
 
@@ -544,28 +544,28 @@ void Renderer::BuildG_Buffers()
 	mG_Buffer.insert({ "albedoMap", std::move(albedoMap) });
 
 	Texture normalMap;
-	normalMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	normalMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "normalMap", std::move(normalMap) });
 
 	Texture metallicMap;
-	metallicMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	metallicMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "metallicMap", std::move(metallicMap) });
 
 	Texture roughnessMap;
-	roughnessMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	roughnessMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "roughnessMap", std::move(roughnessMap) });
 
 	Texture metallicRoughnessMap;
-	metallicRoughnessMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	metallicRoughnessMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "metallicRoughnessMap", std::move(metallicRoughnessMap) });
 
 	Texture aoMap;
-	aoMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	aoMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "aoMap", std::move(aoMap) });
 
 	Texture maskMap;
@@ -579,22 +579,22 @@ void Renderer::BuildG_Buffers()
 	mG_Buffer.insert({ "depthMap", std::move(depthMap) });
 
 	Texture viewMap;
-	viewMap.CreateTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
-		false, true, mWindowWidth, mWindowHeight, GL_RGB);
+	viewMap.CreateHDRTexture2D(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_NEAREST, GL_NEAREST,
+		false, true, mWindowWidth, mWindowHeight, GL_RGB32F, GL_RGB);
 	mG_Buffer.insert({ "viewMap", std::move(viewMap) });
 }
 
 void Renderer::LoadG_Buffers(const std::string& directoryName, float degree0, float degree1)
 {
 	LoadTexture("albedo", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("normal", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("metallic", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("roughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("metallicRoughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("ao", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("normal", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("metallic", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("roughness", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("metallicRoughness", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("ao", GL_FLOAT, directoryName, degree0, degree1);
 	LoadTexture("mask", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("depth", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("view", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("view", GL_FLOAT, directoryName, degree0, degree1);
 }
 void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, float degree0, float degree1)
 {
@@ -614,7 +614,11 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 	else
 		textureName[0] = std::toupper(textureName[0]);
 
-	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(static_cast<uint32_t>(degree0)) + "_" + std::to_string(static_cast<uint32_t>(degree1)) + ".png";
+	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(static_cast<uint32_t>(degree0)) + "_" + std::to_string(static_cast<uint32_t>(degree1));
+	if (textureName == "Albedo" || textureName == "Mask" || textureName == "Depth")
+		textureFileName += ".png";
+	else
+		textureFileName += ".hdr";
 
 	if (textureType == GL_UNSIGNED_BYTE)
 	{
@@ -646,17 +650,17 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 			GLenum internalFormat, format;
 			if (_nrChannels == 1)
 			{
-				internalFormat = GL_R16F;
+				internalFormat = GL_R32F;
 				format = GL_RED;
 			}
 			else if (_nrChannels == 3)
 			{
-				internalFormat = GL_RGB16F;
+				internalFormat = GL_RGB32F;
 				format = GL_RGB;
 			}
 			else if (_nrChannels == 4)
 			{
-				internalFormat = GL_RGBA16F;
+				internalFormat = GL_RGBA32F;
 				format = GL_RGBA;
 			}
 
@@ -905,13 +909,13 @@ void Renderer::DrawRenderItems(RenderLayer renderLayer, uint32_t programID, bool
 
 	for (const auto& renderItem : renderItems)
 	{
-		float scalingSize = static_cast<float>(1.0 / renderItem.mesh->GetDiagnalLength());
-		glm::vec3 boxCenter = renderItem.mesh->GetBoundingBoxCenter();
-		glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
+		// float scalingSize = static_cast<float>(1.0 / renderItem.mesh->GetDiagnalLength());
+		// glm::vec3 boxCenter = renderItem.mesh->GetBoundingBoxCenter();
+		// glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scalingSize, scalingSize, scalingSize));
 		glm::mat4 rotateThetaMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f - mTheta), glm::vec3(1.0f, 0.0f, 0.0f));
 		glm::mat4 rotatePhiMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f - mPhi), glm::vec3(0.0f, 1.0f, 0.0f));
-		glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-boxCenter.x, -boxCenter.y, -boxCenter.z));
-		glm::mat4 normalizeMatrix = scalingMatrix * rotateThetaMatrix * rotatePhiMatrix * translateMatrix;
+		// glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(-boxCenter.x, -boxCenter.y, -boxCenter.z));
+		glm::mat4 normalizeMatrix = rotateThetaMatrix * rotatePhiMatrix;
 		// renderItem.world = normalizeMatrix;
 		// SetMat4(programID, "world", renderItem.world);
 		SetMat4(programID, "world", normalizeMatrix);

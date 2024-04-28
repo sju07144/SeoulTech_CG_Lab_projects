@@ -161,7 +161,7 @@ private:
 	std::string mModelDirectoryName = "..\\..\\resources\\models\\";
 	std::string mImageDirectoryName = "..\\..\\resources\\images\\";
 
-	std::string mDatasetDirectoryName = "..\\..\\resources\\IBL_rendered_examples";
+	std::string mDatasetDirectoryName = "..\\..\\resources\\IBL_rendered_examples_HDR";
 	std::vector<std::string> mModelDirectoryNames;
 
 	static constexpr uint32_t mNumImageBasedLights = 6;

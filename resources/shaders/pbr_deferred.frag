@@ -216,22 +216,22 @@ void main()
 	color = vec4(albedo, alphaChannel);
 
 	// For debugging
-	vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+	// vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+	// 
+	// vec3 kS = F;
+	// vec3 kD = 1.0 - kS;
+	// kD *= 1.0 - metallic;
+	// 
+	// vec3 irradiance = texture(irradianceMap, N).rgb;
+	// vec3 diffuse = irradiance * albedo;
+	// 
+	// const float MAX_REFLECTION_LOD = 4.0;
+	// vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
+	// vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
+	// vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+	// 
+	// result = kD * diffuse;
 	
-	vec3 kS = F;
-	vec3 kD = 1.0 - kS;
-	kD *= 1.0 - metallic;
-	
-	vec3 irradiance = texture(irradianceMap, N).rgb;
-	vec3 diffuse = irradiance * albedo;
-	
-	const float MAX_REFLECTION_LOD = 4.0;
-	vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * MAX_REFLECTION_LOD).rgb;
-	vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
-	vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
-	
-	result = kD * diffuse;
-
 	if (mask == 1.0)
 	{		
 		// HDR tonemapping
@@ -240,7 +240,7 @@ void main()
 		result = pow(result, vec3(1.0 / 2.2));
 
 		color = vec4(result, alphaChannel);
-		color = vec4(prefilteredColor, 1.0);
+		// color = vec4(prefilteredColor, 1.0);
 	}
 }
 
