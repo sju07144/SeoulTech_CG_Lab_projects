@@ -32,6 +32,6 @@ This project is a study of Image-based Deferred Rendering and aims to compare th
 - sqlite3 3.33.0 -> 3.35.5
 ## Notes
 .glb loader and renderer for IBL forward rendering
-- https://github.com/Hoyeon9/glbLoadCapture
+- [glbLoadCapture](https://github.com/Hoyeon9/glbLoadCapture)
 Almost of the codes for the rendering refer to 'Learn OpenGL'.
 - [IBL rendering - Learn OpenGL](https://learnopengl.com/PBR/IBL/Diffuse-irradiance)
