@@ -13,11 +13,13 @@ ImageBasedLight::ImageBasedLight(
 { }
 
 void ImageBasedLight::SetDirectoryAndFileName(
-	const std::string & shaderDirectoryName, 
-	const std::string & equirectangularMapFileName)
+	const std::string& shaderDirectoryName, 
+	const std::string& equirectangularMapFileName,
+	const std::string& hdrName)
 {
 	mShaderDirectoryName = shaderDirectoryName;
 	mEquirectangularMapFileName = equirectangularMapFileName;
+	mHDRName = hdrName;
 }
 
 void ImageBasedLight::BuildResources()
@@ -83,7 +85,7 @@ void ImageBasedLight::BuildTextures()
 
 	Texture cubeMap;
 	texName = "cubeMap";
-	cubeMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR, GL_LINEAR, false, true, mCubeMapSize, mCubeMapSize);
+	cubeMap.CreateHDRTextureCube(GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR, false, true, mCubeMapSize, mCubeMapSize);
 	mBasicTextures.insert({ texName, std::move(cubeMap) });
 
 	Texture irradianceMap;
@@ -159,9 +161,15 @@ void ImageBasedLight::DrawCubeMap(uint32_t programID)
 		glBindVertexArray(vertexAttribArray);
 		glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
 		glBindVertexArray(0);
+
+		std::string fileName = mTextureDirectoryName + "\\" + mHDRName + "\\cubemap\\" + mTextureNames[i] + ".png";
+		SaveScreenshotToPNG(fileName, mCubeMapSize, mCubeMapSize);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, mImageBasedLightRenderItem.environmentMap->GetTexture());
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 }
 
 void ImageBasedLight::DrawIrradianceMap(uint32_t programID)
@@ -191,6 +199,9 @@ void ImageBasedLight::DrawIrradianceMap(uint32_t programID)
 		glBindVertexArray(vertexAttribArray);
 		glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
 		glBindVertexArray(0);
+
+		std::string fileName = mTextureDirectoryName + "\\" + mHDRName + "\\irradiancemap\\" + mTextureNames[i] + ".png";
+		SaveScreenshotToPNG(fileName, mIrradianceMapSize, mIrradianceMapSize);
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -234,6 +245,9 @@ void ImageBasedLight::DrawPreFilteredEnvironmentMap(uint32_t programID)
 			glBindVertexArray(vertexAttribArray);
 			glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
 			glBindVertexArray(0);
+
+			std::string fileName = mTextureDirectoryName + "\\" + mHDRName + "\\prefiltermap\\" + mTextureNames[i] + "(" + std::to_string(mip) + ").png";
+			SaveScreenshotToPNG(fileName, mipWidth, mipHeight);
 		}
 	}
 
@@ -263,6 +277,9 @@ void ImageBasedLight::DrawBRDFLookUpTable(uint32_t programID)
 	glBindVertexArray(vertexAttribArray);
 	glDrawElements(primitiveType, indexCount, indexFormat, nullptr);
 	glBindVertexArray(0);
+
+	std::string fileName = mTextureDirectoryName + "\\" + mHDRName + "\\brdfLUT.png";
+	SaveScreenshotToPNG(fileName, mBrdfLUTSize, mBrdfLUTSize);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

@@ -163,8 +163,8 @@ void main()
 
 	vec3 N = 2.0 * texture(normalMap0, vs_out.texCoords).rgb - 1.0;
 
-	// vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3 - position);
-	vec3 V = 2.0 * texture(viewMap0, vs_out.texCoords).rgb - 1.0;
+	vec3 V = normalize(sceneConstant.cameraPos + normalize(sceneConstant.cameraFront) * 0.3 - position);
+	// vec3 V = 2.0 * texture(viewMap0, vs_out.texCoords).rgb - 1.0;
 	// vec3 V = normalize(sceneConstant.cameraPos - position);
 	vec3 R = reflect(-V, N);
 
@@ -238,7 +238,7 @@ void main()
 		result = result / (result + vec3(1.0));
 		// gamma correct
 		result = pow(result, vec3(1.0 / 2.2));
-
+	
 		color = vec4(result, alphaChannel);
 		// color = vec4(prefilteredColor, 1.0);
 	}

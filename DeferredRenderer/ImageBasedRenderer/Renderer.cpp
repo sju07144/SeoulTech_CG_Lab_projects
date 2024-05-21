@@ -127,8 +127,8 @@ void Renderer::Initialize()
 
 void Renderer::RenderLoop()
 {
-	uint32_t modelIndex = 0, imageBasedLightIndex = 0;
-	auto& currentImageBasedLight = mImageBasedLights[0];
+	uint32_t modelIndex = 0;
+	ImageBasedLight currentImageBasedLight;
 	std::string imageDirectoryName = mDatasetDirectoryName + "\\" + mModelDirectoryNames[modelIndex];
 	std::string currentImageFileName = " ";
 
@@ -147,6 +147,12 @@ void Renderer::RenderLoop()
 		// Load albedo, normal, metallic, roughness, ao maps.
 		LoadG_Buffers(imageDirectoryName, mTheta, mPhi);
 
+		currentImageBasedLight = mImageBasedLights[mImageBasedLightIndex];
+		quadRenderItem.irradianceMap = currentImageBasedLight.GetIrradianceMap();
+		quadRenderItem.prefilterMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
+		quadRenderItem.brdfLUT = currentImageBasedLight.GetBRDFLookUpTable();
+		environmentRenderItem.environmentMap = currentImageBasedLight.GetCubeMap();
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -155,22 +161,16 @@ void Renderer::RenderLoop()
 		UpdateData();
 		DrawScene();
 
-		currentImageFileName = "HDR" + std::to_string(imageBasedLightIndex + 1) + "_IBL_IBR_"
+		currentImageFileName = "HDR" + std::to_string(mImageBasedLightIndex + 1) + "_IBL_IBR_"
 			+ std::to_string(static_cast<uint32_t>(mTheta)) + "_" + std::to_string(static_cast<uint32_t>(mPhi)) + ".png";
 		SaveScreenshotToPNG(imageDirectoryName + "\\" + currentImageFileName, mWindowWidth, mWindowHeight);
 
 		std::cout << "Save Completed " << mModelDirectoryNames[modelIndex] << "\\" << currentImageFileName << std::endl;
 
-		imageBasedLightIndex++;
-		if (imageBasedLightIndex == mNumImageBasedLights)
+		mImageBasedLightIndex++;
+		if (mImageBasedLightIndex == mNumImageBasedLights)
 		{
-			imageBasedLightIndex = 0;
-			currentImageBasedLight = mImageBasedLights[imageBasedLightIndex];
-			quadRenderItem.irradianceMap = currentImageBasedLight.GetIrradianceMap();
-			quadRenderItem.prefilterMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
-			quadRenderItem.brdfLUT = currentImageBasedLight.GetBRDFLookUpTable();
-			environmentRenderItem.environmentMap = currentImageBasedLight.GetCubeMap();
-
+			mImageBasedLightIndex = 0;
 			mPhi += mDegreeDelta;
 			if (mPhi == 360.0f)
 			{
@@ -186,14 +186,6 @@ void Renderer::RenderLoop()
 					mTheta = 0.0f;
 				}
 			}
-		}
-		else
-		{
-			currentImageBasedLight = mImageBasedLights[imageBasedLightIndex];
-			quadRenderItem.irradianceMap = currentImageBasedLight.GetIrradianceMap();
-			quadRenderItem.prefilterMap = currentImageBasedLight.GetPreFilteredEnvironmentMap();
-			quadRenderItem.brdfLUT = currentImageBasedLight.GetBRDFLookUpTable();
-			environmentRenderItem.environmentMap = currentImageBasedLight.GetCubeMap();
 		}
 
 		glfwSwapBuffers(mWindow);
@@ -587,14 +579,14 @@ void Renderer::BuildG_Buffers()
 void Renderer::LoadG_Buffers(const std::string& directoryName, float degree0, float degree1)
 {
 	LoadTexture("albedo", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("normal", GL_FLOAT, directoryName, degree0, degree1);
-	LoadTexture("metallic", GL_FLOAT, directoryName, degree0, degree1);
-	LoadTexture("roughness", GL_FLOAT, directoryName, degree0, degree1);
-	LoadTexture("metallicRoughness", GL_FLOAT, directoryName, degree0, degree1);
-	LoadTexture("ao", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("normal", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("metallic", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("roughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("metallicRoughness", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
+	LoadTexture("ao", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("mask", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 	LoadTexture("depth", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
-	LoadTexture("view", GL_FLOAT, directoryName, degree0, degree1);
+	LoadTexture("view", GL_UNSIGNED_BYTE, directoryName, degree0, degree1);
 }
 void Renderer::LoadTexture(std::string textureName, GLenum textureType, const std::string& directoryName, float degree0, float degree1)
 {
@@ -615,10 +607,11 @@ void Renderer::LoadTexture(std::string textureName, GLenum textureType, const st
 		textureName[0] = std::toupper(textureName[0]);
 
 	textureFileName = directoryName + "\\" + textureName + "_" + std::to_string(static_cast<uint32_t>(degree0)) + "_" + std::to_string(static_cast<uint32_t>(degree1));
-	if (textureName == "Albedo" || textureName == "Mask" || textureName == "Depth")
-		textureFileName += ".png";
-	else
-		textureFileName += ".hdr";
+	textureFileName += ".png";
+	// if (textureName == "Albedo" || textureName == "Mask" || textureName == "Depth")
+	// 	textureFileName += ".png";
+	// else
+	// 	textureFileName += ".hdr";
 
 	if (textureType == GL_UNSIGNED_BYTE)
 	{
@@ -686,16 +679,16 @@ void Renderer::BuildImageBasedLightsAndDraw()
 
 	std::string hdrDirectoryName = mDatasetDirectoryName + "\\hdr\\";
 	std::array<std::string, 6> hdrFileNames = {
-		"blue_photo_studio.hdr",
-		"dancing_hall.hdr",
-		"office.hdr",
-		"pine_attic.hdr",
-		"studio_small_03.hdr",
-		"thatch_chapel.hdr"
+		"blue_photo_studio",
+		"dancing_hall",
+		"office",
+		"pine_attic",
+		"studio_small_03",
+		"thatch_chapel"
 	};
 	for (int i = 0; i < 6; i++)
 	{
-		mImageBasedLights[i].SetDirectoryAndFileName(mShaderDirectoryName, hdrDirectoryName + hdrFileNames[i]);
+		mImageBasedLights[i].SetDirectoryAndFileName(mShaderDirectoryName, hdrDirectoryName + hdrFileNames[i] + ".hdr", hdrFileNames[i]);
 		mImageBasedLights[i].BuildResources();
 		mImageBasedLights[i].Draw(
 			equirectangularToCubeShaders,

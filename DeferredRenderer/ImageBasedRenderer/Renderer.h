@@ -129,6 +129,7 @@ private:
 	Camera mCamera;
 	bool isCameraMove = false;
 	float mTheta = 0.0f, mPhi = 0.0f;
+	uint32_t mImageBasedLightIndex = 0;
 	static const float mRadius;
 	static const float mDegreeDelta;
 	glm::vec3 mCurrentCameraPosition;
@@ -161,7 +162,7 @@ private:
 	std::string mModelDirectoryName = "..\\..\\resources\\models\\";
 	std::string mImageDirectoryName = "..\\..\\resources\\images\\";
 
-	std::string mDatasetDirectoryName = "..\\..\\resources\\IBL_rendered_examples_HDR";
+	std::string mDatasetDirectoryName = "..\\..\\resources\\IBL_rendered_examples";
 	std::vector<std::string> mModelDirectoryNames;
 
 	static constexpr uint32_t mNumImageBasedLights = 6;

@@ -21,7 +21,8 @@ public:
 
 	void SetDirectoryAndFileName(
 		const std::string& shaderDirectoryName,
-		const std::string& equirectangularMapFileName
+		const std::string& equirectangularMapFileName,
+		const std::string& hdrName
 	);
 
 	void BuildResources();
@@ -51,7 +52,12 @@ private:
 	RenderItem mImageBasedLightRenderItem;
 
 	std::string mShaderDirectoryName = "E:\\SeoulTech_CG_Lab_projects\\resources\\shaders\\";
+	std::string mTextureDirectoryName = "..\\..\\resources\\HDR_resources\\ibr";
 	std::string mEquirectangularMapFileName;
+
+	std::string mHDRName;
+
+	std::array<std::string, 6> mTextureNames = { "right", "left", "top", "bottom", "back", "front" };
 
 	uint32_t cubeMapVertexShaderID;
 	std::unordered_map<std::string, Texture> mBasicTextures;

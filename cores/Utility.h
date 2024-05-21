@@ -104,6 +104,8 @@ struct RenderItem
 	std::vector<Texture*> metallicRoughnessMaps;
 	std::vector<Texture*> aoMaps;
 	std::vector<Texture*> maskMaps;
+	std::vector<Texture*> depthMaps;
+	std::vector<Texture*> viewMaps;
 
 	Texture* environmentMap = nullptr;
 

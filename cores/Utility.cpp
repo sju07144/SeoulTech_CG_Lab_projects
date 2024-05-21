@@ -95,7 +95,7 @@ void SaveScreenshotToPNG(const std::string& filename, uint32_t width, uint32_t h
 	cv::Mat image(height, width, CV_8UC3);
 
 	//use fast 4-byte alignment (default anyway) if possible
-	glPixelStorei(GL_PACK_ALIGNMENT, (image.step & 3) ? 1 : 4);
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
 	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
 	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
