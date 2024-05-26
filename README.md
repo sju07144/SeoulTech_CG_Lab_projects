@@ -32,7 +32,7 @@ This project is a study of Image-based Deferred Rendering and aims to compare th
 - sqlite3 3.33.0 -> 3.35.5
 ## Notes
 Dataset for rendering
--[Amazon Berkeley Objects (ABO) Dataset](https://amazon-berkeley-objects.s3.amazonaws.com/index.html)
+- [Amazon Berkeley Objects (ABO) Dataset](https://amazon-berkeley-objects.s3.amazonaws.com/index.html)
 
 Almost of the codes for the rendering refer to 'Learn OpenGL'.
 - [IBL rendering - Learn OpenGL](https://learnopengl.com/PBR/IBL/Diffuse-irradiance)
