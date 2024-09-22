@@ -15,7 +15,7 @@ for root, dirs, files in os.walk(dataset_directory):
 
 # Load Metrics .csv file
 metrics_directory = os.path.join('..', 'resources')
-metrics_dataframe = pd.read_csv(os.path.join(metrics_directory, 'metrics(without_background).csv'))
+metrics_dataframe = pd.read_csv(os.path.join(metrics_directory, 'metrics(rendered_images).csv'))
 
 hdr_file_names = [ "blue_photo_studio.hdr", "dancing_hall.hdr", "office.hdr", "pine_attic.hdr", "studio_small_03.hdr", "thatch_chapel.hdr"]
 

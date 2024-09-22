@@ -15,14 +15,14 @@ for root, dirs, files in os.walk(dataset_directory):
 
 # Load Metrics .csv file
 metrics_directory = os.path.join('..', 'resources')
-metrics_dataframe = pd.read_csv(os.path.join(metrics_directory, 'metrics.csv'))
+metrics_dataframe = pd.read_csv(os.path.join(metrics_directory, 'metrics(rendered_images).csv'))
 
 hdr_file_names = [ "blue_photo_studio.hdr", "dancing_hall.hdr", "office.hdr", "pine_attic.hdr", "studio_small_03.hdr", "thatch_chapel.hdr"]
 
 # Sorted by MSE
 print('--------------------------------------------')
-print (metrics_dataframe.sort_values(['MSE']).head())
-print (metrics_dataframe.sort_values(['MSE']).tail())
+print (metrics_dataframe.sort_values(['MSE(NoBackground)']).head())
+print (metrics_dataframe.sort_values(['MSE(NoBackground)']).tail())
 print()
 
 mse_dfs_by_hdr = {}
@@ -42,7 +42,7 @@ for hdr_name in hdr_file_names:
 
         thetas = mse_by_model['Theta']
         phis = mse_by_model['Phi']
-        mses = mse_by_model['MSE']
+        mses = mse_by_model['MSE(NoBackground)']
         axes[indexX][indexY].view_init(elev=30., azim=120) 
         axes[indexX][indexY].scatter(thetas, phis, mses)
         axes[indexX][indexY].set_xlabel('Theta')
@@ -58,7 +58,7 @@ for hdr_name in hdr_file_names:
                 indexX = 0
     
     plt.suptitle(hdr_name)
-    plt.savefig(os.path.join(metrics_directory, 'statistics', hdr_name.replace('.hdr', '.png')))
+    plt.savefig(os.path.join(metrics_directory, 'statistics', 'MSE(NoBackground)_' + hdr_name.replace('.hdr', '.png')))
     
 print('Complete(by)')
     
