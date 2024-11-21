@@ -4,6 +4,11 @@ This project is a study of Image-based Deferred Rendering and aims to compare th
 <p align="center">
   <img src="https://github.com/user-attachments/assets/cf256478-5ac0-4f2c-b79f-3798036e321d">
 </p>
+## Path description
+- Renderer Path: /DeferredRenderer/ImageBasedRenderer
+- Loss calculator Path: /LossCalculator
+- Library Path: /Libraries/OpenGLLibrary
+- OpenGL Utility Path: /cores
 
 ## Tech spec
 ### Hardware spec
